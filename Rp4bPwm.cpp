@@ -1,6 +1,7 @@
 
 #include "Rp4bPwm.h"
 
+
 Rp4bPwm::Rp4bPwm(PwmNumber pwmNum){
    _pwmNum = pwmNum;
    _reserved = false;
@@ -8,20 +9,25 @@ Rp4bPwm::Rp4bPwm(PwmNumber pwmNum){
    _period = 0;
    _dutyCycle = 0;
 
-   _exportFilePath = "//sys//class//pwm//pwmchip0//export";
-   _unexportFilePath = "//sys//class//pwm//pwmchip0//unexport";
-   _polarityFilePath = "//sys//class//pwm//pwmchip0//pwm0/polarity";
-   _periodFilePath = "//sys//class//pwm//pwmchip0//pwm0//period";
-   _dutyCycleFilePath = "//sys//class//pwm//pwmchip0//pwm0//duty_cycle";
-   _enableFilePath = "//sys//class//pwm//pwmchip0//pwm0//enable";
+   _exportFilePath = "/sys/class/pwm/pwmchip0/export";
+   _unexportFilePath = "/sys/class/pwm/pwmchip0/unexport";
+   _polarityFilePath = "/sys/class/pwm/pwmchip0/pwm0/polarity";
+   _periodFilePath = "/sys/class/pwm/pwmchip0/pwm0/period";
+   _dutyCycleFilePath = "/sys/class/pwm/pwmchip0/pwm0/duty_cycle";
+   _enableFilePath = "/sys/class/pwm/pwmchip0/pwm0/enable";
+
+   // use RAII pattern
+   Reserve(true);
 
 } // end ctor 
 
-
 Rp4bPwm::~Rp4bPwm(){
 
-} // end dtor 
+   // use RAII pattern
+   Enable(false);
+   Reserve(false);
 
+} // end dtor 
 
 /// ret -1 = substr not found 
 /// ret 0 = success
@@ -29,11 +35,11 @@ Rp4bPwm::~Rp4bPwm(){
 int Rp4bPwm::SetPwmNumInPath(string &path){
    int ret = 0;
 
-   string currentPwm = _PwmNumStrings[_pwmNum];
-   string otherPwm = (_pwmNum == PwmNumber::Pwm0 ? _PwmNumStrings[0] : _PwmNumStrings[1]);
+   string currentPwm = _PwmNumStrings[static_cast<size_t>(_pwmNum)];
+   string otherPwm = (_pwmNum == PwmNumber::Pwm0 ? _PwmNumStrings[1] : _PwmNumStrings[0]);
 
     // the find_first() return iterator_range converts to a bool
-    if(find_first(path, currentPwm) {
+    if(find_first(path, currentPwm)) {
         ret = 1;
     }
     else {
@@ -45,17 +51,26 @@ int Rp4bPwm::SetPwmNumInPath(string &path){
 
 
 int Rp4bPwm::WriteFile(const string &path, const string &value){
-      int ret = 0
+      int ret = 0;
 
       fstream file;
       file.open(path, ios::out);
       if(!file) {
          ret = -1;
+         _errStr = "file open failed";
       }
       else {
+         
          file << value;
+         if(file.fail()){
+            ret = -1;
+            _errStr = "file write failed";
+         } // end fi 
+
          file.close(); 
       } // end if 
+
+      this_thread::sleep_for(chrono::milliseconds(100));
 
       return ret;
    } // end WriteFile
@@ -77,7 +92,7 @@ int Rp4bPwm::Reserve(bool state){
       SetPwmNumInPath(_dutyCycleFilePath);
       SetPwmNumInPath(_enableFilePath);
 
-      result = WriteFile(_exportFilePath, lexical_cast<string>(_pwmNum)):
+      result = WriteFile(_exportFilePath, lexical_cast<string>(static_cast<int>(_pwmNum)));
       _reserved = true;
    }
    else {
@@ -85,14 +100,18 @@ int Rp4bPwm::Reserve(bool state){
       if(_reserved == false) {
          _errStr = "pwm resource is already released";
          return -1;
-      } // end if 
+      }
+      else {
 
-      result = WriteFile(_unexportFilePath, lexical_cast<string>(_pwmNum)):
-      _reserved = false;
+         result = WriteFile(_unexportFilePath, lexical_cast<string>(static_cast<int>(_pwmNum)));
+         if(result == 0)
+            _reserved = false;
+
+      } // end if 
    } // end if 
 
    // for debug 
-   assert(result == 0)
+   assert(result == 0);
 
    return ret;
 } // end Reserve
@@ -100,6 +119,7 @@ int Rp4bPwm::Reserve(bool state){
 
 int Rp4bPwm::Enable(bool state){
    int ret = 0;
+   int result = 0;
 
    if(_reserved != true) {
       _errStr = "no pwm resource is reserved";
@@ -124,7 +144,7 @@ int Rp4bPwm::Enable(bool state){
    } // end if 
 
    // for debug 
-   assert(result == 0)
+   assert(result == 0);
 
    return ret;
 } // end Enable
@@ -132,6 +152,7 @@ int Rp4bPwm::Enable(bool state){
 /// param  hz [1:10000]
 int Rp4bPwm::SetFrequenceHz(unsigned hz){
    int ret = 0;
+   int result = 0;
 
    if(_reserved != true) {
       _errStr = "no pwm resource is reserved";
@@ -150,10 +171,10 @@ int Rp4bPwm::SetFrequenceHz(unsigned hz){
    } // end if 
 
    _period = static_cast<unsigned>(NanoSecIn1Second * (1.0/hz));
-   int result = WriteFile(_periodFilePath, lexical_cast<string>(_period));
+   result = WriteFile(_periodFilePath, lexical_cast<string>(_period));
 
    // for debug 
-   assert(result == 0)
+   assert(result == 0);
 
    return ret;
 } // end SetFrequenceHz
@@ -161,6 +182,7 @@ int Rp4bPwm::SetFrequenceHz(unsigned hz){
 
 int Rp4bPwm::SetDutyCyclePercent(unsigned dc){
    int ret = 0;
+   int result = 0;
 
    if(_reserved != true) {
       _errStr = "no pwm resource is reserved";
@@ -168,16 +190,16 @@ int Rp4bPwm::SetDutyCyclePercent(unsigned dc){
    } // end if 
 
    // range check
-   if(hz == 0 || hz > 100){
+   if(dc == 0 || dc > 100){
       _errStr = "duty cycle is out of range[1:100]";
       return -1;
    } // end if 
 
    _dutyCycle = static_cast<unsigned>(_period * (dc/100.0));
-   int result = WriteFile(_dutyCycleFilePath, lexical_cast<string>(_dutyCycle));
+   result = WriteFile(_dutyCycleFilePath, lexical_cast<string>(_dutyCycle));
 
    // for debug 
-   assert(result == 0)
+   assert(result == 0);
 
    return ret;
 } // end SetDutyCyclePercent

@@ -13,6 +13,8 @@
 #include <vector>
 #include <fstream>
 #include <iomanip>
+#include <thread>
+#include <chrono>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -24,10 +26,10 @@ using namespace boost;
 enum class PwmNumber : int {
    Pwm0 = 0,
    Pwm1
-} // end enum
+}; // end enum
 
 const double NanoSecIn1Second = 1.0E+09;
- 
+
 //  in export use 0 (pwm0) for pin 18 and 1 (pwm1) for pin 19  
 
 
@@ -37,9 +39,8 @@ public:
    Rp4bPwm(PwmNumber pwmNum);
    ~Rp4bPwm();
 
-   int Reserve(bool state);
    int SetFrequenceHz(unsigned hz);
-   int SetDutyCyclePercent(unsigned char dc);
+   int SetDutyCyclePercent(unsigned dc);
    int Enable(bool state);
 
    string GetErrStr(){return _errStr;}
@@ -62,6 +63,7 @@ private:
 
    const vector<string> _PwmNumStrings{{"pwm0"},{"pwm1"}};
 
+   int Reserve(bool state);
    int SetPwmNumInPath(string &path);
    int WriteFile(const string &path, const string &value);
 
