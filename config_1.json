@@ -1,0 +1,44 @@
+{
+  "ChickenCoop": {
+    "name": "chicken coop door",
+    "database_path": "/home/bjc/chick/exe/coop.db",
+    "door_state_table": "coop_state",
+    "sensor_table": "readings",
+    "digital_io": [
+       { 
+         "type": "input",
+         "name": "retracted", 
+         "resistor_mode": "none",
+         "pin": 27
+       },
+       { 
+         "type": "input",
+         "name": "extended", 
+         "resistor_mode": "none",
+         "pin": 26
+       },
+       { 
+         "type": "input",
+         "name": "obstructed", 
+         "resistor_mode": "none",
+         "pin": 28
+       },
+       { 
+         "type": "output",
+         "name": "enable", 
+         "resistor_mode": "none",
+         "pin": 29
+       },
+       { 
+         "type": "output",
+         "name": "direction", 
+         "resistor_mode": "none",
+         "pin": 25
+       } 
+    ],
+    "loop_time_ms": 100,
+    "fast_pwm_hz": 4000,
+    "slow_pwm_hz": 1600,
+    "homing_pwm_hz": 800
+  }
+}

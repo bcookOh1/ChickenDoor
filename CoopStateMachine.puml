@@ -1,0 +1,68 @@
+' plantuml diagram 
+' author: Bennett Cook
+' date: 7/18/2020
+' desc: the uses only 2 switch inputs from the raspberry pi 
+'        zero W, up_position and down_position
+' ref: https://plantuml.com
+' ref: https://plantuml.com/commons
+' ref: https://plantuml-documentation.readthedocs.io/en/latest/
+
+@startuml
+
+title Chicken Coop Sequence
+
+state "Homing" as homing
+state "Open" as  open
+state "Closed" as closed
+
+state "MovingToOpen" as  moving_to_open
+state "MovingToClose" as  moving_to_close
+state "Failed" as failed
+
+center footer  
+
+ this sequence uses 3 switch inputs from the raspberry pi, 
+ retracted, extended, obstructed used in guard lambdas.
+
+endfooter
+
+[*] --> homing
+homing : note: home the linear actuator 
+homing : on_entry : (ready_flag = 0)
+state homing {
+   [*] -> slow_retract 
+   slow_retract : note: slow move to the retracted position
+   slow_retract : on_entry: (direction = 0, freq = slow, enable = 1)
+   slow_retract : on_exit: (enable = 0)
+   slow_retract --> extend : eOnTime[retracted]
+   slow_retract --> failed : [overtimed]
+   extend : note : extend at slow speed for 2 seconds 
+   extend : action : wait for 2 seconds 
+   extend : on_entry : (direction = 1, freq = slow, enable = 1)
+   extend : on_exit : (enable = 0)
+   extend --> retract : [wait_complete]
+   retract : note: move normal speed to retracted position
+   retract : on_entry: (direction = 0, freq = slow, enable = 1)
+   retract : on_exit: (enable = 0, ready_flag = 1)
+   retract -> [*] : eOnTime[retracted]
+   retract --> failed : [overtimed]
+}
+homing --> closed : [ready_flag]
+
+closed --> moving_to_open : eOnTime[retracted &&\nlight >= morning]
+closed : on_entry: (enable = 0)
+closed : on_exit: (direction = 1, freq = fast, enable = 1)
+moving_to_open --> open : eOnTime[extended]
+moving_to_open : on_entry: (direction = 0, freq = fast, enable = 1)
+moving_to_open --> failed : [overtimed]
+open --> moving_to_close : eOnTime[extended && light <= night] 
+open : on_entry: (enable = 0)
+open : on_exit: (direction = 0, freq = slow, enable = 1)
+moving_to_close --> moving_to_open : eOnTime[obstruction]
+moving_to_close : on_entry: (direction = 0, freq = fast, enable = 1)
+moving_to_close --> closed : eOnTime[extended]
+moving_to_close --> failed : [overtimed]
+failed : on_entry : (enable = 0, ready_flag = 0)
+failed --> [*]
+
+@enduml

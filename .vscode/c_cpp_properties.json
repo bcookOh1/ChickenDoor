@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "mingw g++",
+            "includePath": [
+                "${default}",
+                "D:/sw_libs/c++/boost_1_77_0/"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "cStandard": "c17",
+            "intelliSenseMode": "windows-gcc-x64",
+            "compilerPath": "D:/msys64/mingw64/bin/g++.exe",
+            "compilerArgs": [
+                "-g",
+                "-Wall"
+            ],
+            "cppStandard": "gnu++20"
+        }
+    ],
+    "version": 4
+}
