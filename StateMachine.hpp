@@ -46,6 +46,10 @@ class Open;
 class MovingToClose;
 class Closed;
 class Failed;
+class ObstructionDetected;
+class ObstructionPause;
+class PauseDone;
+
 
 // transition table
 // example: src_state +event<>[guard] / action = dst_state,
@@ -87,42 +91,54 @@ public:
          return (_light <= 100);
       }; // end IsNight
 
+      auto ReturnTrue = [] () -> bool {
+         return true;
+      }; // end ReturnTrue
+
+
       return make_transition_table (
 
          // start homing 
          *state<Idle1> + event<eInit> / [&] {ReadyFlag(false);} = state<HomingSlowRetract>,
-         state<HomingSlowRetract> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.homingPwmHz); MotorEnable(true); StartTimer(12000);},
+         state<HomingSlowRetract> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.homingPwmHz); MotorEnable(true); StartTimer(34000);},
          state<HomingSlowRetract> + sml::on_exit<_> / [&] {MotorEnable(false);},
-         state<HomingSlowRetract> + event<eOnTime>[Retracted] / [] {cout << "HomingExtend" << endl;} = state<HomingExtend>,
+         state<HomingSlowRetract> + event<eOnTime>[Retracted] / [&] {cout << "HomingExtend" << endl; KillTimer();} = state<HomingExtend>,
          state<HomingSlowRetract> + event<eOnTime>[TimerDone] / [] {cout << "Failed1" << endl;} = state<Failed>,
 
-         state<HomingExtend> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(4000);},
+         state<HomingExtend> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(2000);},
          state<HomingExtend> + sml::on_exit<_> / [&] {MotorEnable(false);},
-         state<HomingExtend> + event<eOnTime>[TimerDone] / [] {cout << "HomingRetract" << endl;} = state<HomingRetract>,
+         state<HomingExtend> + event<eOnTime>[TimerDone] / [&] {cout << "HomingRetract" << endl; KillTimer();} = state<HomingRetract>,
 
          state<HomingRetract> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(5000);},
          state<HomingRetract> + sml::on_exit<_> / [&] {MotorEnable(false); ReadyFlag(true);},
-         state<HomingRetract> + event<eOnTime>[Retracted] / [] {cout << "Closed" << endl;} = state<Closed>,
-         state<HomingRetract> + event<eOnTime>[TimerDone] / [] {cout << "Failed2" << endl;} = state<Failed>
-
-         /*
+         state<HomingRetract> + event<eOnTime>[Retracted] / [&] {cout << "Closed" << endl; KillTimer();} = state<Closed>,
+         state<HomingRetract> + event<eOnTime>[TimerDone] / [] {cout << "Failed2" << endl;} = state<Failed>,
          // end homing 
 
-         state<Closed> + sml::on_entry<_> / [&] {MotorEnable(Off);},
-         state<Closed> + event<eOnTime>[IsMorning] / [] {cout << "" << endl;} = state<MovingToOpen>,
+         state<Closed> + sml::on_entry<_> / [&] {MotorEnable(false);},
+         state<Closed> + event<eOnTime>[IsMorning] / [] {cout << "MovingToOpen" << endl;} = state<MovingToOpen>,
 
-         state<MovingToOpen> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.fastPwmHz); MotorEnable(true); StartTimer(10000);},
-         state<MovingToOpen> + event<eOnTime>[Extended] / [] {cout << "Open" << endl;} = state<Open>,
+         state<MovingToOpen> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.fastPwmHz); MotorEnable(true); StartTimer(7000);},
+         state<MovingToOpen> + event<eOnTime>[Extended] / [&] {cout << "Open" << endl; KillTimer();} = state<Open>,
          state<MovingToOpen> + event<eOnTime>[TimerDone] / [] {cout << "Failed3" << endl;} = state<Failed>,
 
          state<Open> + sml::on_entry<_> / [&] {MotorEnable(false);},
-         state<Open> + event<eOnTime>[IsNight] / [] {cout << "MovingToClose" << endl;} = state<MovingToClose>,
+         state<Open> + event<eOnTime>[IsNight] / [&] {cout << "MovingToClose" << endl; KillTimer();} = state<MovingToClose>,
          state<Open> + event<eOnTime>[TimerDone] / [] {cout << "Failed" << endl;} = state<Failed>,
 
-         state<MovingToClose> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(18000);},
-         state<MovingToClose> + event<eOnTime>[Retracted] / [] {cout << "Closed" << endl;} = state<Closed>,
-         state<MovingToClose> + event<eOnTime>[TimerDone] / [] {cout << "Failed4" << endl;} = state<Failed>
-         */
+         state<MovingToClose> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(17000);},
+         state<MovingToClose> + event<eOnTime>[Retracted] / [&] {cout << "Closed" << endl; KillTimer();} = state<Closed>,
+         state<MovingToClose> + event<eOnTime>[TimerDone] / [] {cout << "Failed4" << endl;} = state<Failed>,
+
+         // obstruction
+         state<MovingToClose> + event<eOnTime>[Obstructed] / [&] {cout << "ObstructionDetected" << endl; KillTimer();} = state<ObstructionDetected>,
+         state<ObstructionDetected> + event<eOnTime>[ReturnTrue] / [] {cout << "ObstructionPause" << endl; } = state<ObstructionPause>,
+         state<ObstructionPause> + sml::on_entry<_> / [&] {MotorEnable(false); StartTimer(3000);},
+         state<ObstructionPause> + event<eOnTime>[TimerDone] / [&] {cout << "PauseDone" << endl; KillTimer();} = state<PauseDone>,
+
+         state<PauseDone> + event<eOnTime>[Obstructed] / [] {cout << "MovingToOpen" << endl;} = state<MovingToOpen>,
+         state<PauseDone> + event<eOnTime>[!Obstructed] / [] {cout << "MovingToClose" << endl;} = state<MovingToClose>
+         
       );
 
    } // end operator() 
@@ -155,8 +171,11 @@ private:
       _ioValues["enable"] = (state ? 1 : 0);
    }  // end MotorEnable 
 
-   void StartTimer (unsigned tm) {
+   void KillTimer() {
       _nbTimer.Cancel();
+   } // end KillTimer
+
+   void StartTimer (unsigned tm) {
       _nbTimer.SetupTimer(tm);
       _nbTimer.StartTimer();
    } // end StartTimer

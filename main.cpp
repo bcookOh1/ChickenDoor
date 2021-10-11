@@ -18,6 +18,7 @@
 #include "CommonDef.h"
 #include "Util.h"
 #include "StateMachine.hpp"
+#include "Camera.h"
 
 // for direct control w/o WiringPI see sysfs section: https://elinux.org/RPi_GPIO_Code_Samples#bcm2835_library
 
@@ -92,13 +93,19 @@ int main(int argc, char* args[]){
    digitalIo.SetOutputs(ioValues);
 
    NoBlockTimer nbTimer;
-   float light = 105.0f;
+   float light = 100.0f;
 
    Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
    sml::sm<Ccsm> sm(ccsm);
 
    // move off Idle1 states
    sm.process_event(eInit{});
+   int count = 0;
+   bool ready = false;
+
+   Camera cam;
+
+   bool cameraInuse = false;
 
    while(true){
       
@@ -106,10 +113,34 @@ int main(int argc, char* args[]){
       sm.process_event(eOnTime{});
       digitalIo.SetOutputs(ioValues);
       
-      //printInputs(digitalIo, ioValues);
+      // printInputs(digitalIo, ioValues);
 
       if(sm.is(sml::state<Failed>) == true) break;
-      if(sm.is(sml::state<Closed>) == true) break;
+      if(sm.is(sml::state<Closed>) == true) ready = true;
+      if(sm.is(sml::state<ObstructionDetected>) == true) {
+         cout << "main: ObstructionDetected" << endl;
+         
+         if(cameraInuse == false){
+            cameraInuse = true;
+            cam.StillAsync();
+         } // end if
+
+      } // end if 
+      
+      // simulate morning/evening change every 30sec
+      if(ready){
+         ++count;
+         if(count % 300 == 299){
+            light = (light <= 100 ? 175.0f : 100.0f);
+         } // end if 
+      } // end if 
+
+      if(cameraInuse == true) {
+         if(cam.IsDone()){
+            cameraInuse = false;
+            cout << "count: " << count << endl;
+         } // end if 
+      } // end if 
 
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 

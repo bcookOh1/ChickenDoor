@@ -28,9 +28,11 @@ using namespace std::chrono_literals;
 using MsDuration = std::chrono::duration<int, std::ratio<1, 1000>>;
 using namespace std;
 
-// return a date string in standard format "YYYY-MM-DD HH:MM:SS" with
-// the current date and time  
+// return a date string in standard format "YYYY-MM-DD HH:MM:SS" with  the current date and time  
 string GetSqlite3DateTime();
+
+// return a date time string in format "YYYY-MM-DD HH-MM-SS" with the current date and time 
+string GetDateTimeFilename();
 
 // 
 IoValues MakeIoValuesMap(const vector<IoConfig> &io);
@@ -153,6 +155,7 @@ public:
       _kill = true;
       std::this_thread::sleep_for(25ms);
       _done = false;
+      _running = false;
       return;
    } // end Cancel
 
