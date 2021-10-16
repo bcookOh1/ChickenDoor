@@ -84,11 +84,11 @@ public:
       }; // end TimerDone
 
       auto IsMorning = [this] () -> bool {
-         return (_light >= 150);
+         return (_light <= 600);
       }; // end IsMorning
 
       auto IsNight = [this] () -> bool {
-         return (_light <= 100);
+         return (_light >= 800);
       }; // end IsNight
 
       auto ReturnTrue = [] () -> bool {

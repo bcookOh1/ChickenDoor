@@ -19,6 +19,8 @@
 #include "Util.h"
 #include "StateMachine.hpp"
 #include "Camera.h"
+#include "PCF8591Reader.h"
+
 
 // for direct control w/o WiringPI see sysfs section: https://elinux.org/RPi_GPIO_Code_Samples#bcm2835_library
 
@@ -90,27 +92,48 @@ int main(int argc, char* args[]){
 
    ioValues["enable"] = 1;
    ioValues["direction"] = 0;
+   ioValues["sun"] = 0;
    digitalIo.SetOutputs(ioValues);
 
    NoBlockTimer nbTimer;
-   float light = 100.0f;
+
+   // initialize with night level 
+   float light = 1024.0f; // sensor is high at night low in day
+   PCF8591Reader pcf8591r;
+   pcf8591r.SetChannelAndConversion(PCF8591_AI_CHANNEL::Ai0, [=](float in){return (in * 4.0f) + 0.0f;});
 
    Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
    sml::sm<Ccsm> sm(ccsm);
 
    // move off Idle1 states
    sm.process_event(eInit{});
-   int count = 0;
    bool ready = false;
 
    Camera cam;
-
    bool cameraInuse = false;
 
-   while(true){
+   // used as edge detect on ioValues["toggle"]
+   // so no nee to hold the button down 
+   unsigned toggleLast = 0;
+
+   while(true) {
       
-      digitalIo.ReadAll(ioValues);
+      int result = digitalIo.ReadAll(ioValues);
+      if(result != 0){
+        cout << "read gpio error: " << digitalIo.GetErrorStr() << endl; 
+        break;
+      } // end if 
+
       sm.process_event(eOnTime{});
+
+      // rising edge detect switches the 'sun' output
+      if(ioValues["toggle"] == 1) {
+         if(toggleLast == 0){ 
+            ioValues["sun"] = (ioValues["sun"] == 1 ? 0 : 1);
+         } // end if 
+      } // end if 
+      toggleLast = ioValues["toggle"];
+
       digitalIo.SetOutputs(ioValues);
       
       // printInputs(digitalIo, ioValues);
@@ -120,27 +143,38 @@ int main(int argc, char* args[]){
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          cout << "main: ObstructionDetected" << endl;
          
-         if(cameraInuse == false){
+         if(cameraInuse == false) {
             cameraInuse = true;
             cam.StillAsync();
          } // end if
 
       } // end if 
-      
-      // simulate morning/evening change every 30sec
-      if(ready){
-         ++count;
-         if(count % 300 == 299){
-            light = (light <= 100 ? 175.0f : 100.0f);
-         } // end if 
-      } // end if 
 
       if(cameraInuse == true) {
          if(cam.IsDone()){
             cameraInuse = false;
-            cout << "count: " << count << endl;
          } // end if 
       } // end if 
+      
+      // use features when the door is ready 
+      if(ready) {
+ 
+         // read PCF8591 analog 
+         if(pcf8591r.GetStatus() == ReaderStatus::NotStarted){
+            pcf8591r.ReadAfterSec(10);
+         }
+         else if(pcf8591r.GetStatus() == ReaderStatus::Complete){
+            light = pcf8591r.GetData();
+            cout << "light: " << light << endl;
+            pcf8591r.ResetStatus();
+         }
+         else if(pcf8591r.GetStatus() == ReaderStatus::Error) {
+            cout << pcf8591r.GetError() << endl;
+            pcf8591r.ResetStatus();
+            break;
+         } // end if 
+
+     } // end if 
 
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 
@@ -149,6 +183,7 @@ int main(int argc, char* args[]){
 
    ioValues["enable"] = 0;
    ioValues["direction"] = 0;
+   ioValues["sun"] = 0;
    digitalIo.SetOutputs(ioValues);
 
    return 0;

@@ -24,6 +24,12 @@
          "pin": 28
        },
        { 
+         "type": "input",
+         "name": "toggle", 
+         "resistor_mode": "none",
+         "pin": 6
+       },
+       { 
          "type": "output",
          "name": "enable", 
          "resistor_mode": "none",
@@ -34,6 +40,12 @@
          "name": "direction", 
          "resistor_mode": "none",
          "pin": 25
+       },
+       { 
+         "type": "output",
+         "name": "sun", 
+         "resistor_mode": "none",
+         "pin": 23
        } 
     ],
     "loop_time_ms": 100,
