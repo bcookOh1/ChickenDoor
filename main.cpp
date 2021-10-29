@@ -20,6 +20,7 @@
 #include "StateMachine.hpp"
 #include "Camera.h"
 #include "PCF8591Reader.h"
+#include "PrintUtils.h"
 
 
 // for direct control w/o WiringPI see sysfs section: https://elinux.org/RPi_GPIO_Code_Samples#bcm2835_library
@@ -113,10 +114,21 @@ int main(int argc, char* args[]){
    bool cameraInuse = false;
 
    // used as edge detect on ioValues["toggle"]
-   // so no nee to hold the button down 
+   // so no need to hold the button down 
    unsigned toggleLast = 0;
+   
+   // allow user to enable/disable printing 
+   SmallIpc sipc;
+   ConsoleWatcher wc;
+   wc.Setup();
 
    while(true) {
+
+      // if user types 'c' enter enable PrintLn()
+      if(wc.CheckForInput() == 1) {
+         string in = wc.GetInput();
+         sipc.Writer(in[0] == 'c' ? 1 : 0);
+      } // end if 
       
       int result = digitalIo.ReadAll(ioValues);
       if(result != 0){
@@ -178,6 +190,9 @@ int main(int argc, char* args[]){
 
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 
+
+   // restore cin to blocking mode 
+   wc.Quit();
 
    pwm.Enable(false);
 
