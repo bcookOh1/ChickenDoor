@@ -22,6 +22,7 @@
 #include <type_traits>
 
 #include "CommonDef.h"
+#include "PrintUtils.h"
 //#include "UpdateDatabase.h"
 
 using namespace std::chrono_literals;
@@ -115,7 +116,7 @@ public:
          ret = -1;
       } // end if 
 
-      cout << "SetupTimer: " << ret << ", tm: " << msd << endl;
+      PrintLn((boost::format{ "SetupTimer: %1%, tm: %2%" } % ret % msd).str());
       return ret;
    } // end SetupTimer
 
@@ -134,7 +135,7 @@ public:
          ret = -1;
       } // end if 
 
-      cout << "StartTimer: " << ret << endl;
+      PrintLn((boost::format{ "StartTimer: %1%" } % ret).str());
       return ret;
    } // end StartTimer
 
@@ -169,7 +170,7 @@ private:
    void TimerTask() {
       MsDuration tc = 0ms;
 
-      cout << "TimerTask: start: ms: " << _msd.count() << endl;
+      PrintLn((boost::format{ "TimerTask: start: ms: %1%" } % _msd.count()).str());
       
       while(!_done){
          
@@ -186,7 +187,7 @@ private:
 
       } // end while 
 
-      cout << "TimerTask: done " << _done << endl;
+      PrintLn((boost::format{ "TimerTask: done: %1%" } % _done).str());
 
       _running = false;
       _kill = false;

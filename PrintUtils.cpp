@@ -1,9 +1,24 @@
 
 #include "PrintUtils.h"
 
+void vtprint(){
+   cout << endl;
+} // end vtprint
+
+template <typename T, typename... Types>
+void vtprint(T V1, Types... V2){
+   cout << V1;
+   vtprint(V2...);
+} // end vtprint
+
+
 WatchConsole::WatchConsole() {
    _quit = false;
 } // end ctor 
+
+WatchConsole::~WatchConsole() {
+} // end dtor 
+
 
 int WatchConsole::Setup(){
 
@@ -37,11 +52,11 @@ bool WatchConsole::CheckForInput() {
       if(result == future_status::ready) {
          _input = _fut.get();
          ret = true;
-         _fut = std::async(std::launch::async, [this]() -> int {cout << "start2\n"; return GetUserInput(); });
+         _fut = std::async(std::launch::async, [this]() -> int { return GetUserInput(); });
       } // end if 
    }
    else {
-      _fut = std::async(std::launch::async, [this]() -> int {cout << "start1\n"; return GetUserInput(); });
+      _fut = std::async(std::launch::async, [this]() -> int { return GetUserInput(); });
    } // end if 
 
    return ret;
@@ -57,12 +72,10 @@ void WatchConsole::Close() {
 
 
 int WatchConsole::GetUserInput() {
-   int ret = 0;
    string input;
 
-   array<epoll_event, 1> events;
-
    // input gets the cin data what available
+   array<epoll_event, 1> events;
    while(input.size() == 0) {
 
       // stop checking 
@@ -96,7 +109,7 @@ SmallIpc::SmallIpc() {
 } // end ctor 
 
 
-~SmallIpc::SmallIpc() {
+SmallIpc::~SmallIpc() {
    shared_memory_object::remove( SharedMemoryName.c_str() );
 } // end dtor
 

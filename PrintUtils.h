@@ -17,6 +17,8 @@
 #include <boost/core/noncopyable.hpp>
 
 using namespace std;
+using namespace boost::interprocess;
+
 
 const string SharedMemoryName = "CPP";
 const string SharedMemoryItem = "PrintEnable";
@@ -29,15 +31,10 @@ const string SharedMemoryItem = "PrintEnable";
 // note: these function DO NOT use the shared memory item to 
 // enable/disable printing. These always print. 
 // usage: vtprint("one", 2, "three", 4);
-void vtprint(){
-   cout << endl;
-} // end vtprint
+void vtprint();
 
 template <typename T, typename... Types>
-void vtprint(T V1, Types... V2){
-   cout << V1;
-   vtprint(V2...);
-} // end vtprint
+void vtprint(T V1, Types... V2);
 //*******************************************
 
 
@@ -49,7 +46,7 @@ void vtprint(T V1, Types... V2){
 // class and functions that follows.  
 // 
 // ref: https://stackoverflow.com/questions/6171132/non-blocking-console-input-c
-class WatchConsole : privat boost::noncopyable {
+class WatchConsole : private boost::noncopyable {
 public:
 
    WatchConsole();
@@ -68,7 +65,7 @@ private:
    int GetUserInput();
 
    future<int> _fut;
-   atomic<bool> _quit;
+   std::atomic<bool> _quit;
 
    string _input;
    string _errorStr;
@@ -92,7 +89,7 @@ private:
 // usage: PrintLn((boost::format{ "loop count %1%" } % i).str());.
 // you can use PrintLn() with just a string or boost::format, as shown,
 // for more flexible, inline style simplicity
-class SmallIpc : privat boost::noncopyable {
+class SmallIpc : private boost::noncopyable {
 public:
 
    SmallIpc();

@@ -20,7 +20,7 @@ dep = $(obj:.o=.d)  # one dependency file for each source
 # the "CPPFLAGS" macro is automatically included in compile step (very confusing)
 CPPFLAGS = -Wall -std=c++2a -MMD
 
-LFLAGS = -L/usr/lib/arm-linux-gnueabihf -lwiringPi -lpthread -lboost_system -lboost_filesystem
+LFLAGS = -L/usr/lib/arm-linux-gnueabihf -lwiringPi -lpthread -lboost_system -lboost_filesystem -lrt
 
 # the executable to build
 TARGET = coop

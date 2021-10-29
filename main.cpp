@@ -83,7 +83,7 @@ int main(int argc, char* args[]){
    // lambda to print io in single line 
    auto printInputs = [](DigitalIO &digitalIo, IoValues &ioValues){
       digitalIo.ReadAll(ioValues);
-      cout << IoToLine(ioValues);
+       PrintLn(IoToLine(ioValues));
    }; // end lambda
 
    Rp4bPwm pwm(PwmNumber::Pwm1);
@@ -119,12 +119,12 @@ int main(int argc, char* args[]){
    
    // allow user to enable/disable printing 
    SmallIpc sipc;
-   ConsoleWatcher wc;
+   WatchConsole wc;
    wc.Setup();
 
    while(true) {
 
-      // if user types 'c' enter enable PrintLn()
+      // if user types 'c' <enter> enable PrintLn()
       if(wc.CheckForInput() == 1) {
          string in = wc.GetInput();
          sipc.Writer(in[0] == 'c' ? 1 : 0);
@@ -132,8 +132,8 @@ int main(int argc, char* args[]){
       
       int result = digitalIo.ReadAll(ioValues);
       if(result != 0){
-        cout << "read gpio error: " << digitalIo.GetErrorStr() << endl; 
-        break;
+         PrintLn((boost::format{ "read gpio error: %1%" } % digitalIo.GetErrorStr()).str());
+         break;
       } // end if 
 
       sm.process_event(eOnTime{});
@@ -153,7 +153,7 @@ int main(int argc, char* args[]){
       if(sm.is(sml::state<Failed>) == true) break;
       if(sm.is(sml::state<Closed>) == true) ready = true;
       if(sm.is(sml::state<ObstructionDetected>) == true) {
-         cout << "main: ObstructionDetected" << endl;
+         PrintLn("main: ObstructionDetected");
          
          if(cameraInuse == false) {
             cameraInuse = true;
@@ -177,11 +177,10 @@ int main(int argc, char* args[]){
          }
          else if(pcf8591r.GetStatus() == ReaderStatus::Complete){
             light = pcf8591r.GetData();
-            cout << "light: " << light << endl;
             pcf8591r.ResetStatus();
          }
          else if(pcf8591r.GetStatus() == ReaderStatus::Error) {
-            cout << pcf8591r.GetError() << endl;
+            PrintLn((boost::format{ "PCF8591 error: %1%" } % pcf8591r.GetError()).str());
             pcf8591r.ResetStatus();
             break;
          } // end if 
@@ -192,7 +191,7 @@ int main(int argc, char* args[]){
    } // end while 
 
    // restore cin to blocking mode 
-   wc.Quit();
+   wc.Close();
 
    pwm.Enable(false);
 

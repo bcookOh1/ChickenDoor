@@ -1,5 +1,6 @@
 
 #include "Camera.h"
+#include "PrintUtils.h"
 
 Camera::Camera(){
    _status = 0;
@@ -29,17 +30,17 @@ bool Camera::IsDone(){
 
    if(_fut.wait_for(0ms) == future_status::timeout) {
       ret = false;
-      cout << "future_status::timeout, status: " << _status << endl;
+      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
    }
    else if (_fut.wait_for(0ms) == future_status::ready) {
       _status = _fut.get();
       ret = true;
-      cout << "future_status::ready, status: " << _status << endl;
+      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
    }
    else {
       _status = _fut.get();
       ret = true;
-      cout << "future_status::other, status: " << _status << endl;
+      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
    } // end if 
 
    return ret;
