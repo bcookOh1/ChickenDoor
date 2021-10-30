@@ -68,6 +68,10 @@ int main(int argc, char* args[]){
       return 0;
    } // end if 
 
+   // an IPC to control printing
+   SmallIpc sipc;
+   sipc.Writer(0); // start PrintLn() disabled
+
    // set the config in the AppConfig class, this is a a simple container class  
    // passed to to other classes in the app
    AppConfig ac = rcf.GetConfiguration();
@@ -118,15 +122,15 @@ int main(int argc, char* args[]){
    unsigned toggleLast = 0;
    
    // allow user to enable/disable printing 
-   SmallIpc sipc;
    WatchConsole wc;
    wc.Setup();
 
    while(true) {
 
       // if user types 'c' <enter> enable PrintLn()
-      if(wc.CheckForInput() == 1) {
+      if(wc.CheckForInput() == true) {
          string in = wc.GetInput();
+         if(in[0] == 'q') break;
          sipc.Writer(in[0] == 'c' ? 1 : 0);
       } // end if 
       

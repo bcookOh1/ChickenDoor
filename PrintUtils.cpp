@@ -1,5 +1,6 @@
 
 #include "PrintUtils.h"
+#include <boost/assert.hpp> 
 
 void vtprint(){
    cout << endl;
@@ -50,8 +51,18 @@ bool WatchConsole::CheckForInput() {
    if(_fut.valid() == true) {
       future_status result = _fut.wait_for(0ms);
       if(result == future_status::ready) {
-         _input = _fut.get();
-         ret = true;
+
+         int stat = _fut.get();
+         if(stat < 0){ // error
+            BOOST_ASSERT_MSG(false, _errorStr.c_str());
+         }
+         else if(stat == 0){
+            // 0 chars from stdin, user may have hit <cr> only
+         }
+         else { // stat == 1
+            ret = true; // chars available 
+         } // end if 
+         
          _fut = std::async(std::launch::async, [this]() -> int { return GetUserInput(); });
       } // end if 
    }
@@ -64,10 +75,10 @@ bool WatchConsole::CheckForInput() {
 
 
 void WatchConsole::Close() { 
-   _quit = true;      // will stop async 
-   _fut.wait();       // then wait to finish
-   close(_epollFd);   // watching cin events 
-   cin.clear();       // restore cin 
+   _quit = true;          // will stop async 
+   _fut.wait_for(75ms);   // then wait to finish, 25ms > GetUserInput while loop sleep
+   close(_epollFd);       // watching cin events 
+   cin.clear();           // restore cin 
 } // end quit
 
 

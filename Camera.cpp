@@ -30,17 +30,17 @@ bool Camera::IsDone(){
 
    if(_fut.wait_for(0ms) == future_status::timeout) {
       ret = false;
-      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
+      PrintLn((boost::format{ "camera, future timeout: %1%" } % _status).str());
    }
    else if (_fut.wait_for(0ms) == future_status::ready) {
       _status = _fut.get();
       ret = true;
-      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
+      PrintLn((boost::format{ "camera, future ready: %1%" } % _status).str());
    }
    else {
       _status = _fut.get();
       ret = true;
-      PrintLn((boost::format{ "future_status::timeout, status: %1%" } % _status).str());
+      PrintLn((boost::format{ "camera, future differed: %1%" } % _status).str());
    } // end if 
 
    return ret;
