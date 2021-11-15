@@ -75,8 +75,11 @@ bool WatchConsole::CheckForInput() {
 
 
 void WatchConsole::Close() { 
-   _quit = true;          // will stop async 
-   _fut.wait_for(75ms);   // then wait to finish, 25ms > GetUserInput while loop sleep
+   _quit = true;          // will stop the async() 
+
+   // wait for GetUserInput loop to finish with 75ms 
+   _fut.wait_for(75ms);   
+
    close(_epollFd);       // watching cin events 
    cin.clear();           // restore cin 
 } // end quit
