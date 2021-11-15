@@ -10,6 +10,7 @@
 #define COMMONDEF_H
 
 #include <string>
+#include <string_view>
 #include <map>
 #include <thread>
 #include <chrono>
@@ -97,8 +98,8 @@ struct IoConfig {
    } // end assignment operator
 
    // set type from string 
-   void SetTypeFromString(const string &str) {
-      if(str == DIGITAL_OUTPUT_STR){
+   void SetTypeFromString(string_view strv) {
+      if(strv == DIGITAL_OUTPUT_STR){
          type = PinType::DOutput;
       }
       else {
@@ -107,11 +108,11 @@ struct IoConfig {
    } // end SetTypeFromString 
 
    // set mode from string 
-   void SetInputResistorModeFromString(const string &str) {
-      if(str == INPUT_RESISTOR_PULLDOWN_STR){
+   void SetInputResistorModeFromString(string_view strv) {
+      if(strv == INPUT_RESISTOR_PULLDOWN_STR){
          resistor_mode = InputResistorMode::PullDown;
       }
-      else if(str == INPUT_RESISTOR_PULLUP_STR){
+      else if(strv == INPUT_RESISTOR_PULLUP_STR){
          resistor_mode = InputResistorMode::PullUp;
       }
       else {

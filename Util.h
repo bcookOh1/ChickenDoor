@@ -10,6 +10,7 @@
 #define UTIL_H
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <map>
 #include <tuple>
@@ -23,7 +24,6 @@
 
 #include "CommonDef.h"
 #include "PrintUtils.h"
-//#include "UpdateDatabase.h"
 
 using namespace std::chrono_literals;
 using MsDuration = std::chrono::duration<int, std::ratio<1, 1000>>;
@@ -46,9 +46,9 @@ string IoToLine(const IoValues &ioValues);
 // conditional print  with optional newline
 // used with command line SilentFlag 
 // use string str param instead of const string & to accept literal strings  
-inline void CondPrint(string str, bool cond, bool newline = false) {
+inline void CondPrint(string_view strv, bool cond, bool newline = false) {
    if(cond){
-      cout << str << (newline ? '\n' : ' ');
+      cout << strv << (newline ? '\n' : ' ');
       cout.flush();
    } // end if 
 } // end CondPrint
