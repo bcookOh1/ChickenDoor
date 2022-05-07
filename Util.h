@@ -116,13 +116,13 @@ public:
          ret = -1;
       } // end if 
 
-      PrintLn((boost::format{ "SetupTimer: %1%, tm: %2%" } % ret % msd).str());
+      PrintLn((boost::format{ "SetupTimer: ret=%1% tm: %2%" } % ret % msd).str());
       return ret;
    } // end SetupTimer
 
 
    // return 0 success
-   // return -1 timer is lready running
+   // return -1 timer is already running
    int StartTimer(){
       int ret = 0;
 
@@ -135,7 +135,7 @@ public:
          ret = -1;
       } // end if 
 
-      PrintLn((boost::format{ "StartTimer: %1%" } % ret).str());
+      PrintLn((boost::format{ "StartTimer: ret=%1%" } % ret).str());
       return ret;
    } // end StartTimer
 

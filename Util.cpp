@@ -105,7 +105,7 @@ string IoToLine(const IoValues &ioValues){
    
    string out = oss.str();
    out.pop_back();
-   out += "\n";
+   // out += "\n";
 
    return out;
 } // end IoToString

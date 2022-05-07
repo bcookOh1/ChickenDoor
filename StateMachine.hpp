@@ -24,10 +24,10 @@ using namespace std;
 namespace sml = boost::sml;
 
 
-const int Backward = 0; 
-const int Forward = 1;  
-const int On = 1;
-const int Off = 0;
+const unsigned MoveUp = 1; 
+const unsigned MoveDown = 0;  
+// const int On = 1;
+// const int Off = 0;
 
 
 // anonymous namespace 
@@ -39,9 +39,9 @@ struct eOnTime {};
 
 // for this implementation, states are just empty classes
 class Idle1;
-class HomingSlowRetract;
-class HomingRetract;
-class HomingExtend;
+class HomingSlowUp;
+class HomingUp;
+class HomingDown;
 class MovingToOpen;
 class Open;
 class MovingToClose;
@@ -64,17 +64,26 @@ public:
          _readyFlag = false;
    } // end ctor 
 
+   // callback to set outputs in main()
+   // const string name, const unsigned value
+   int SetStateMachineCB(std::function<void(string name, unsigned value)> cb){
+      int ret = 0;
+      _cb = cb; 
+      return ret;
+   } // end SetStateMachineCB
+
+
    auto operator()()  {
       using namespace sml;
 
       // guards
-      auto Retracted = [this] () -> bool {
-         return (_ioValues["retracted"] == 0);
-      }; // end Retracted
+      auto AtUp = [this] () -> bool {
+         return (_ioValues["up"] == 0);
+      }; // end AtUp
 
-      auto Extended = [this] () -> bool {
-         return (_ioValues["extended"] == 0);
-      }; // end Extended
+      auto AtDown = [this] () -> bool {
+         return (_ioValues["down"] == 0);
+      }; // end AtDown
 
       auto Obstructed = [this] () -> bool {
          return (_ioValues["obstructed"] == 0);
@@ -85,11 +94,11 @@ public:
       }; // end TimerDone
 
       auto IsMorning = [this] () -> bool {
-         return (_light <= 600);
+         return (_light >= 1000.0f);
       }; // end IsMorning
 
       auto IsNight = [this] () -> bool {
-         return (_light >= 800);
+         return (_light < 1000.0f);
       }; // end IsNight
 
       auto ReturnTrue = [] () -> bool {
@@ -99,35 +108,35 @@ public:
       return make_transition_table (
 
          // start homing 
-         *state<Idle1> + event<eInit> / [&] {ReadyFlag(false);} = state<HomingSlowRetract>,
-         state<HomingSlowRetract> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.homingPwmHz); MotorEnable(true); StartTimer(34000);},
-         state<HomingSlowRetract> + sml::on_exit<_> / [&] {MotorEnable(false);},
-         state<HomingSlowRetract> + event<eOnTime>[Retracted] / [&] {PrintLn("HomingExtend"); KillTimer();} = state<HomingExtend>,
-         state<HomingSlowRetract> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed1");} = state<Failed>,
+         *state<Idle1> + event<eInit> / [&] {ReadyFlag(false); PrintLn("HomingSlowUp state"); } = state<HomingSlowUp>,
+         state<HomingSlowUp> + sml::on_entry<_> / [&] {PrintLn("HomingSlowUp on_entry"); MotorDirection(MoveUp); MotorSpeed(_ac.homingPwmHz); MotorEnable(true); StartTimer(30000);},
+         state<HomingSlowUp> + sml::on_exit<_> / [&] {PrintLn("HomingSlowUp on_exit"); MotorEnable(false);},
+         state<HomingSlowUp> + event<eOnTime>[AtUp] / [&] {PrintLn("HomingDown state"); KillTimer(); } = state<HomingDown>,
+         state<HomingSlowUp> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed1");} = state<Failed>,
 
-         state<HomingExtend> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(2000);},
-         state<HomingExtend> + sml::on_exit<_> / [&] {MotorEnable(false);},
-         state<HomingExtend> + event<eOnTime>[TimerDone] / [&] {PrintLn("HomingRetract"); KillTimer();} = state<HomingRetract>,
+         state<HomingDown> + sml::on_entry<_> / [&] {PrintLn("HomingDown on_entry"); MotorDirection(MoveDown); MotorSpeed(_ac.homingPwmHz); MotorEnable(true); StartTimer(2000);},
+         state<HomingDown> + sml::on_exit<_> / [&] {PrintLn("HomingDown on_exit"); MotorEnable(false);},
+         state<HomingDown> + event<eOnTime>[TimerDone] / [&] {PrintLn("HomingUp state"); KillTimer();} = state<HomingUp>,
 
-         state<HomingRetract> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(5000);},
-         state<HomingRetract> + sml::on_exit<_> / [&] {MotorEnable(false); ReadyFlag(true);},
-         state<HomingRetract> + event<eOnTime>[Retracted] / [&] {PrintLn("Closed"); KillTimer();} = state<Closed>,
-         state<HomingRetract> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed2");} = state<Failed>,
+         state<HomingUp> + sml::on_entry<_> / [&] {MotorDirection(MoveUp); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(5000);},
+         state<HomingUp> + sml::on_exit<_> / [&] {MotorEnable(false); ReadyFlag(true);},
+         state<HomingUp> + event<eOnTime>[AtUp] / [&] {PrintLn("Open"); KillTimer();} = state<Open>,
+         state<HomingUp> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed2");} = state<Failed>,
          // end homing 
 
          state<Closed> + sml::on_entry<_> / [&] {MotorEnable(false);},
          state<Closed> + event<eOnTime>[IsMorning] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
 
-         state<MovingToOpen> + sml::on_entry<_> / [&] {MotorDirection(Forward); MotorSpeed(_ac.fastPwmHz); MotorEnable(true); StartTimer(7000);},
-         state<MovingToOpen> + event<eOnTime>[Extended] / [&] {PrintLn("Open"); KillTimer();} = state<Open>,
+         state<MovingToOpen> + sml::on_entry<_> / [&] {MotorDirection(MoveDown); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(7000);},
+         state<MovingToOpen> + event<eOnTime>[AtUp] / [&] {PrintLn("Open"); KillTimer();} = state<Open>,
          state<MovingToOpen> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed3");} = state<Failed>,
 
          state<Open> + sml::on_entry<_> / [&] {MotorEnable(false);},
          state<Open> + event<eOnTime>[IsNight] / [&] {PrintLn("MovingToClose"); KillTimer();} = state<MovingToClose>,
          state<Open> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed4");} = state<Failed>,
 
-         state<MovingToClose> + sml::on_entry<_> / [&] {MotorDirection(Backward); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(17000);},
-         state<MovingToClose> + event<eOnTime>[Retracted] / [&] {PrintLn("Closed"); KillTimer();} = state<Closed>,
+         state<MovingToClose> + sml::on_entry<_> / [&] {MotorDirection(MoveUp); MotorSpeed(_ac.slowPwmHz); MotorEnable(true); StartTimer(17000);},
+         state<MovingToClose> + event<eOnTime>[AtDown] / [&] {PrintLn("Closed"); KillTimer();} = state<Closed>,
          state<MovingToClose> + event<eOnTime>[TimerDone] / [] {PrintLn("Failed5");} = state<Failed>,
 
          // obstruction
@@ -145,6 +154,7 @@ public:
 
 private:
 
+   std::function<void(string name, unsigned value)> _cb;
    IoValues &_ioValues;
    AppConfig &_ac;
    Rp4bPwm &_pwm;
@@ -157,9 +167,9 @@ private:
       _readyFlag = state;
    } // end ReadyFlag
 
-   void MotorDirection(int dir) {
-      _ioValues["direction"] = (dir ? 1 : 0);
-      PrintLn((boost::format{ "%1%, from  %2%" } % _ioValues["direction"] % dir).str());
+   void MotorDirection(unsigned dir) {
+      _cb("direction", dir);
+      // _ioValues["direction"] = static_cast<unsigned>(dir ? 1 : 0);
    } // end MotorDirection
 
    void MotorSpeed(int hz) {
@@ -167,8 +177,9 @@ private:
    } // end MotorSpeed
 
    void MotorEnable(bool state) {
+      _cb("enable", state == true ? 0u : 1u);
+      // _ioValues["enable"] = static_cast<unsigned>(state == true ? 0 : 1);
       _pwm.Enable(state);
-      _ioValues["enable"] = (state ? 1 : 0);
    }  // end MotorEnable 
 
    void KillTimer() {
@@ -179,10 +190,6 @@ private:
       _nbTimer.SetupTimer(tm);
       _nbTimer.StartTimer();
    } // end StartTimer
-
-   void SetMovingLed(bool state) { 
-      _ioValues["door_cycling"] = (state ? 1 : 0); 
-   } // end SetMovingLed
 
 }; // end struct
 

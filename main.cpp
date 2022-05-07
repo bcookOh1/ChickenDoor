@@ -1,9 +1,6 @@
 
 
 
-
-// #include <boost/asio.hpp>
-// #include <boost/bind/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <chrono>
 #include <thread>
@@ -19,18 +16,24 @@
 #include "Util.h"
 #include "StateMachine.hpp"
 #include "Camera.h"
-#include "PCF8591Reader.h"
+#include "Tsl2591Reader.h"
+#include "Si7021Reader.h"
 #include "PrintUtils.h"
 
-
-// for direct control w/o WiringPI see sysfs section: https://elinux.org/RPi_GPIO_Code_Samples#bcm2835_library
 
 using namespace std;
 namespace filesys = boost::filesystem;
 namespace sml = boost::sml;
 using Ccsm = sm_chicken_coop;
 
-//g++ -g -opwm main.cpp Rp4bPwm.cpp -lwiringPi -lpthread
+// entry point for the program
+// usage: ./coop [-h] -c <config_file> 
+// -h, optional, shows this help text, if included other arguments are ignored
+// -c <config_file>, a json file with the configuration 
+// Note: a space is required between -c and the config file 
+// example: sudo ./coop -c config_1.json 
+// note: if user types 'c' <enter> enable PrintLn()
+// note: if user types q enter quit program
 int main(int argc, char* args[]){
 
    cout << "coop started with " << argc << " params" <<  endl;
@@ -84,57 +87,67 @@ int main(int argc, char* args[]){
    // setup empty IoValue map used for algo data 
    IoValues ioValues = MakeIoValuesMap(ac.dIos);
 
-   // lambda to print io in single line 
-   auto printInputs = [](DigitalIO &digitalIo, IoValues &ioValues){
-      digitalIo.ReadAll(ioValues);
-       PrintLn(IoToLine(ioValues));
-   }; // end lambda
-
    Rp4bPwm pwm(PwmNumber::Pwm1);
-   pwm.SetFrequenceHz(ac.fastPwmHz); 
+   pwm.SetFrequenceHz(ac.homingPwmHz); 
    pwm.SetDutyCyclePercent(50);
    pwm.Enable(false);
 
-   ioValues["enable"] = 1;
-   ioValues["direction"] = 0;
-   ioValues["sun"] = 0;
+   ioValues["enable"] = 1u;     // 1 = off at stepper controller
+   ioValues["direction"] = 1u;  // 1 = off at stepper controller
+   ioValues["r1"] = 1u;
+   ioValues["r2"] = 1u;
+   ioValues["r3"] = 1u;
    digitalIo.SetOutputs(ioValues);
 
+   // read all now so the eInit{} in state machine has fresh data 
+   result = digitalIo.ReadAll(ioValues);
+   if(result != 0){
+      PrintLn((boost::format{ "read gpio error: %1%" } % digitalIo.GetErrorStr()).str());
+   } // end if 
+
+   // temp/humidity and light sensor readers
+   Tsl2591Reader tsl2591r;
+   Si7021Reader si7021r;
+   float light = 0.0f;
+
    NoBlockTimer nbTimer;
-
-   // initialize with night level 
-   float light = 1024.0f; // sensor is high at night low in day
-   PCF8591Reader pcf8591r;
-   pcf8591r.SetChannelAndConversion(PCF8591_AI_CHANNEL::Ai0, [=](float in){return (in * 4.0f) + 0.0f;});
-
    Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
+
+   // lambda as callback from the state machine to set a gpio output
+   // see int SetStateMachineCB() im StateMachine.hpp
+   auto SetOutputFromSM = [&] (string name, unsigned value){
+      ioValues[name] = value;
+      cout << "cb: " << name << "=" << value << endl;  
+   }; // end lambda
+
+   // set the the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
+   ccsm.SetStateMachineCB(std::bind(SetOutputFromSM, std::placeholders::_1, std::placeholders::_2 ));
+
    sml::sm<Ccsm> sm(ccsm);
+   bool ready = false;
 
    // move off Idle1 states
    sm.process_event(eInit{});
-   bool ready = false;
+   digitalIo.SetOutputs(ioValues); // must follow since eInit sets the direction and enable
 
    Camera cam;
    bool cameraInuse = false;
-
-   // used as edge detect on ioValues["toggle"]
-   // so no need to hold the button down 
-   unsigned toggleLast = 0;
    
-   // allow user to enable/disable printing 
+   // to allow user to enable/disable printing 
    WatchConsole wc;
    wc.Setup();
 
    while(true) {
 
       // if user types 'c' <enter> enable PrintLn()
+      // if user types q enter quit program
       if(wc.CheckForInput() == true) {
          string in = wc.GetInput();
          if(in[0] == 'q') break;
          sipc.Writer(in[0] == 'c' ? 1 : 0);
       } // end if 
       
-      int result = digitalIo.ReadAll(ioValues);
+      result = digitalIo.ReadAll(ioValues);
       if(result != 0){
          PrintLn((boost::format{ "read gpio error: %1%" } % digitalIo.GetErrorStr()).str());
          break;
@@ -142,20 +155,11 @@ int main(int argc, char* args[]){
 
       sm.process_event(eOnTime{});
 
-      // rising edge detect switches the 'sun' output
-      if(ioValues["toggle"] == 1) {
-         if(toggleLast == 0){ 
-            ioValues["sun"] = (ioValues["sun"] == 1 ? 0 : 1);
-         } // end if 
-      } // end if 
-      toggleLast = ioValues["toggle"];
-
       digitalIo.SetOutputs(ioValues);
-      
-      // printInputs(digitalIo, ioValues);
 
-      if(sm.is(sml::state<Failed>) == true) break;
-      if(sm.is(sml::state<Closed>) == true) ready = true;
+      if(sm.is(sml::state<Failed>) == true) {cout << "failed state" << endl; break;}
+      if(sm.is(sml::state<Open>) == true) ready = true;
+
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          PrintLn("main: ObstructionDetected");
          
@@ -172,37 +176,57 @@ int main(int argc, char* args[]){
          } // end if 
       } // end if 
       
-      // use features when the door is ready 
-      if(ready) {
- 
-         // read PCF8591 analog 
-         if(pcf8591r.GetStatus() == ReaderStatus::NotStarted){
-            pcf8591r.ReadAfterSec(10);
-         }
-         else if(pcf8591r.GetStatus() == ReaderStatus::Complete){
-            light = pcf8591r.GetData();
-            pcf8591r.ResetStatus();
-         }
-         else if(pcf8591r.GetStatus() == ReaderStatus::Error) {
-            PrintLn((boost::format{ "PCF8591 error: %1%" } % pcf8591r.GetError()).str());
-            pcf8591r.ResetStatus();
-            break;
-         } // end if 
 
-     } // end if 
+      // read Si7021 temp and humidity every n seconds
+      if(si7021r.GetStatus() == ReaderStatus::NotStarted){
+         si7021r.ReadAfterSec(2);
+      }
+      else if(si7021r.GetStatus() == ReaderStatus::Complete){
+         Si7021Data data = si7021r.GetData();
+         si7021r.ResetStatus();
+
+         cout << "si7021: " << data.temperature << data.TemperatureUnits
+                            << ", " << data.humidity << data.humidityUnits << endl; 
+
+      }
+      else if(si7021r.GetStatus() == ReaderStatus::Error) {
+         cout << si7021r.GetError() << endl;
+         si7021r.ResetStatus();
+      } // end if 
+
+      // use features when the door is ready (homed) 
+      if(ready) {
+
+         // read Tsl2591 light level every n seconds
+         if(tsl2591r.GetStatus() == ReaderStatus::NotStarted){
+            tsl2591r.ReadAfterSec(2);
+         }
+         else if(tsl2591r.GetStatus() == ReaderStatus::Complete){
+            Tsl2591Data data = tsl2591r.GetData();
+            tsl2591r.ResetStatus();
+
+            light = data.lightLevel;
+            cout << "tsl2591: " << data.lightLevel << ", " << data.rawlightLevel << endl; 
+         }
+         else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
+            cout << tsl2591r.GetError() << endl;
+            tsl2591r.ResetStatus();
+         } // end if 
+            
+      } // end if 
 
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 
 
+   // all off  
+   pwm.Enable(false);
+   ioValues["enable"] = 1u;
+   ioValues["direction"] = 1u;
+   digitalIo.SetOutputs(ioValues);
+
    // restore cin to blocking mode 
    wc.Close();
 
-   pwm.Enable(false);
-
-   ioValues["enable"] = 0;
-   ioValues["direction"] = 0;
-   ioValues["sun"] = 0;
-   digitalIo.SetOutputs(ioValues);
-
    return 0;
 } // end main
+

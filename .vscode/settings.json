@@ -73,6 +73,10 @@
       "typeindex": "cpp",
       "typeinfo": "cpp",
       "variant": "cpp",
-      "*.ipp": "cpp"
+      "*.ipp": "cpp",
+      "unordered_set": "cpp",
+      "numbers": "cpp",
+      "semaphore": "cpp",
+      "shared_mutex": "cpp"
    }
 }

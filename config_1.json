@@ -7,50 +7,51 @@
     "digital_io": [
        { 
          "type": "input",
-         "name": "retracted", 
+         "name": "up", 
          "resistor_mode": "none",
-         "pin": 27
+         "pin": 0
        },
        { 
          "type": "input",
-         "name": "extended", 
+         "name": "down", 
          "resistor_mode": "none",
-         "pin": 26
+         "pin": 6
        },
        { 
          "type": "input",
          "name": "obstructed", 
          "resistor_mode": "none",
-         "pin": 28
-       },
-       { 
-         "type": "input",
-         "name": "toggle", 
-         "resistor_mode": "none",
-         "pin": 6
+         "pin": 2
        },
        { 
          "type": "output",
          "name": "enable", 
-         "resistor_mode": "none",
-         "pin": 29
+         "pin": 22
        },
        { 
          "type": "output",
          "name": "direction", 
-         "resistor_mode": "none",
+         "pin": 23
+       },
+       { 
+         "type": "output",
+         "name": "r1", 
          "pin": 25
        },
        { 
          "type": "output",
-         "name": "sun", 
-         "resistor_mode": "none",
-         "pin": 23
-       } 
+         "name": "r2", 
+         "pin": 28
+       },
+       { 
+         "type": "output",
+         "name": "r3", 
+         "pin": 29
+       }
     ],
     "loop_time_ms": 100,
-    "fast_pwm_hz": 4000,
-    "slow_pwm_hz": 1600,
+    "fast_pwm_hz": 1200,
+    "slow_pwm_hz": 1000,
     "homing_pwm_hz": 800
   }
 }

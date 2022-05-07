@@ -76,24 +76,30 @@ int DigitalIO::ReadAll(IoValues &io){
 } // end ReadInputs
 
 
-int DigitalIO::SetOutputs(const IoValues &douts){
+int DigitalIO::SetOutputs(const IoValues &io){
     int ret = 0;
 
    // read the requested inputs and return in value vect
-   for(auto iter = douts.begin();  iter != douts.end(); ++iter){
+   for(auto iter = io.begin();  iter != io.end(); ++iter){
 
       unsigned pin = 0;
       int result = GetPinForName(iter->first, pin);
       if(result != 0){
-         _errorStr = "Output name not found: " + iter->first; 
+         _errorStr = "IO name not found: " + iter->first; 
          return -1;
       } // end if 
 
-      _mtx.lock();
-      digitalWrite(pin, static_cast<int>(iter->second));
-      _mtx.unlock();
+      // write the outputs only 
+      if(_dios[iter->first].type == PinType::DOutput){
+         _mtx.lock();
+         digitalWrite(pin, static_cast<int>(iter->second));
+         // cout << iter->first << ":" << static_cast<int>(iter->second) << ","; 
+         _mtx.unlock();
+      } // end if 
 
    } // end for 
+   
+   // cout << endl;
 
    return ret;
 } // end ReadInputs
