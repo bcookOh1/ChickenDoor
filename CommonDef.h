@@ -42,6 +42,16 @@ enum class InputResistorMode {
    PullUp
 }; 
 
+enum class DoorState : int {
+   Startup = 0,
+   Open,
+   MovingToClose,
+   Closed,
+   MovingToOpen,
+   Obstructed,
+   NoChange
+}; // end enum 
+
 // alias for setting or reading io values 
 //                  name,    value  
 using IoValues = std::map<std::string, unsigned>;
@@ -60,6 +70,8 @@ const string CONFIG_LOOP_TIME_MS = "ChickenCoop.loop_time_ms";
 const string CONFIG_FAST_PWM_HZ = "ChickenCoop.fast_pwm_hz";
 const string CONFIG_SLOW_PWM_HZ = "ChickenCoop.slow_pwm_hz";
 const string CONFIG_HOMING_PWM_HZ = "ChickenCoop.homing_pwm_hz";
+const string CONFIG_PI_TEMP_READ_INTERVAL_SEC = "ChickenCoop.pi_temp_read_interval_sec";
+
 
 // string values for digital io type 
 const string DIGITAL_INPUT_STR = "input";
@@ -150,6 +162,7 @@ struct AppConfig  {
       fastPwmHz = rhs.fastPwmHz;
       slowPwmHz = rhs.slowPwmHz;
       homingPwmHz = rhs.homingPwmHz;
+      piTempReadIntervalSec = rhs.piTempReadIntervalSec;
    } // end ctor
 
    // assignment operator 
@@ -163,6 +176,7 @@ struct AppConfig  {
       fastPwmHz = rhs.fastPwmHz;
       slowPwmHz = rhs.slowPwmHz;
       homingPwmHz = rhs.homingPwmHz;
+      piTempReadIntervalSec = rhs.piTempReadIntervalSec;
       return *this;
    } // assignment operator
 
@@ -177,6 +191,7 @@ struct AppConfig  {
       fastPwmHz = 0;
       slowPwmHz = 0;
       homingPwmHz = 0;
+      piTempReadIntervalSec = 0;
    } // end Initialize
 
    string appName;               /// application name 
@@ -188,7 +203,7 @@ struct AppConfig  {
    int fastPwmHz;                /// fast door pwm hertz, used for opening
    int slowPwmHz;                /// slow door pwm hertz, used for closing 
    int homingPwmHz;              /// very slow door pwm hertz, homing and jogging 
-
+   int piTempReadIntervalSec;    /// the PI temperature read period in seconds 
 }; // end struct 
 
 
