@@ -78,10 +78,10 @@ private:
 
 
 //*******************************************************************
-// this class and functions work together to provide a enabled print 
-// for debugging or "silent" mode. It uses a boost shared memory 
-// object to share enable/disable status to any part of the program 
-// without passing an object or a reference.  
+// this class and the two following functions work together to provide  
+// an enabled print for debugging or "silent" mode. It uses a boost  
+// shared memory object to share enable/disable status to any part of  
+// the program without passing an object or a reference.  
 // class: SmallIpc includes Writer() that writes an int (flag) to
 // the shared memory and then there is a PrintLn() that uses 
 // IpcReader() to enable/disable printing. PrintLn() accepts a string 
@@ -101,10 +101,9 @@ private:
 }; // end SmallIpc
 
 // read the shared memory item
-// at this tim, IpcReader() iss not intended for use outside of PrintLn()
-// but it could be used in future applications to more than print enabling
+// at this time, IpcReader() iss not intended for use outside of PrintLn()
+// but it could be used in future applications for more than print enabling
 int IpcReader();
-
 
 // print a line if the shared memory item value is 1
 // usage: PrintLn((boost::format{ "loop count %1%" } % i).str());
