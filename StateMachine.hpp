@@ -51,6 +51,13 @@ class ObstructionDetected;
 class ObstructionPause;
 class PauseDone;
 
+class EnterManual;
+class ManualMovingToOpen;
+class ManualOpen;
+class ManualMovingToClose;
+class ManualClosed;
+class ExitManual;
+
 
 // transition table
 // example: src_state +event<>[guard] / action = dst_state,
@@ -88,6 +95,18 @@ public:
       auto Obstructed = [this] () -> bool {
          return (_ioValues["obstructed"] == 0);
       }; // end Obstructed
+
+      auto IsSwitchUp = [this] () -> bool {
+         return (_ioValues["switch_up"] == 0);
+      }; // end IsSwitchUp
+
+      auto IsSwitchDown = [this] () -> bool {
+         return (_ioValues["switch_down"] == 0);
+      }; // end IsSwitchDown
+
+      auto IsManual = [this] () -> bool {
+         return (_ioValues["switch_up"] == 0 || _ioValues["switch_down"] == 0);
+      }; // end IsManual
 
       auto TimerDone = [this] () -> bool {
          return (_nbTimer.IsDone());
@@ -146,8 +165,46 @@ public:
          state<ObstructionPause> + event<eOnTime>[TimerDone] / [&] {PrintLn("PauseDone"); KillTimer();} = state<PauseDone>,
 
          state<PauseDone> + event<eOnTime>[Obstructed] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
-         state<PauseDone> + event<eOnTime>[!Obstructed] / [] {PrintLn("MovingToClose");} = state<MovingToClose>
+         state<PauseDone> + event<eOnTime>[!Obstructed] / [] {PrintLn("MovingToClose");} = state<MovingToClose>,
+
+// look at subchart for manual
+
+         // manual mode 
+         // detect 
+         state<Closed> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
+         state<Open> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
+         state<MovingToOpen> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
+         state<MovingToClose> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
+
+         // enter manual mode 
+         state<EnterManual> + sml::on_entry<_> / [&] {MotorEnable(false); KillTimer();},
+
+         // manual open the door
+         state<EnterManual> + event<eOnTime>[(IsSwitchUp && !AtUp)] / [&] {
+               PrintLn("ManualMovingToOpen"); MotorDirection(MoveUp); MotorSpeed(_ac.slowPwmHz); MotorEnable(true);
+            } = state<ManualMovingToOpen>,
          
+         state<EnterManual> + event<eOnTime>[AtUp] / [&] {PrintLn("ManualOpen");} = state<ManualOpen>,
+         state<ManualOpen> + sml::on_entry<_> / [&] {MotorEnable(false);},
+
+         // manual close the door
+         state<EnterManual> + event<eOnTime>[(IsSwitchDown && !AtDown)] / [&] {
+               PrintLn("ManualMovingToClose"); MotorDirection(MoveDown); MotorSpeed(_ac.slowPwmHz); MotorEnable(true);
+            } = state<ManualMovingToClose>,
+         
+         state<EnterManual> + event<eOnTime>[AtDown] / [&] {PrintLn("ManualClosed");} = state<ManualClosed>,
+         state<ManualClosed> + sml::on_entry<_> / [&] {MotorEnable(false);},
+
+         // exit manual 
+         state<ManualMovingToOpen> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
+         state<ManualOpen> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
+         state<ManualMovingToClose> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
+         state<ManualClosed> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
+
+         state<ExitManual> + sml::on_entry<_> / [&] {ReadyFlag(false); MotorEnable(false); StartTimer(1000);},
+         state<ExitManual> + event<eOnTime>[TimerDone] / state<HomingSlowUp>
+
+
       );
 
    } // end operator() 
