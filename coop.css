@@ -1,0 +1,41 @@
+
+body {
+  background-color: #e2a983;
+}
+
+p.current  {
+   font-family: verdana; 
+   color: #000;
+   font-size: 1em;
+}
+
+span.current  {
+   font-family: verdana; 
+   color: rgb(28, 75, 204);
+   font-size: 1.5em;
+}
+ 
+#history {
+   font-family:  Arial, Helvetica, sans-serif;
+   background-color: #ffffff;
+} 
+ 
+#history table {
+   margin: 30px;
+}
+  
+#history th {
+   font-size: 1em;
+   padding: 15px;
+   background-color: #1E90FF;
+   color: white;
+}
+  
+#history td {
+   border: 5px;
+   border-color: black;
+   padding: 15px;
+}
+
+#history tr:nth-child(even) {background-color: #f2f2f2;}  
+#history tr:hover {background-color: #ddd;}
