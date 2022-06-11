@@ -14,8 +14,10 @@
 #include "Rp4bPwm.h"
 #include "CommonDef.h"
 #include "Util.h"
+#include "UpdateDatabase.h"
 #include "StateMachine.hpp"
 #include "Camera.h"
+#include "PiTempReader.h"
 #include "Tsl2591Reader.h"
 #include "Si7021Reader.h"
 #include "PrintUtils.h"
@@ -79,6 +81,12 @@ int main(int argc, char* args[]){
    // passed to to other classes in the app
    AppConfig ac = rcf.GetConfiguration();
 
+   // set the sqlite3 file path in the database class
+   UpdateDatabase udb;
+   udb.SetDbFullPath(ac.dbPath);
+   udb.SetDoorStateTableName(ac.dbDoorStateTable);
+   udb.SetSensorDataTableName(ac.dbSensorTable);
+
    // make a digial io class and configure digital io points
    DigitalIO digitalIo;
    digitalIo.SetIoPoints(ac.dIos);
@@ -105,9 +113,23 @@ int main(int argc, char* args[]){
       PrintLn((boost::format{ "read gpio error: %1%" } % digitalIo.GetErrorStr()).str());
    } // end if 
 
-   // temp/humidity and light sensor readers
-   Tsl2591Reader tsl2591r;
+   // reader for pi temp
+   PiTempReader pitr;
+
+   // read the temp once at the start so the temperature var is valid
+   string temperature;
+   result = pitr.RunTask();
+   if(result != 0){
+      cout << pitr.GetError() << endl;
+      return 0;
+   }
+   else {
+      temperature = pitr.GetData();
+   } // end if 
+
+   // readers for ambient sensor temp, humidity, and light
    Si7021Reader si7021r;
+   Tsl2591Reader tsl2591r;
    float light = 0.0f;
 
    NoBlockTimer nbTimer;
@@ -120,15 +142,15 @@ int main(int argc, char* args[]){
       cout << "cb: " << name << "=" << value << endl;  
    }; // end lambda
 
-   // set the the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
+   // set the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
    ccsm.SetStateMachineCB(std::bind(SetOutputFromSM, std::placeholders::_1, std::placeholders::_2 ));
 
    sml::sm<Ccsm> sm(ccsm);
    bool ready = false;
 
-   // move off Idle1 states
+   // move off Idle1 state
    sm.process_event(eInit{});
-   digitalIo.SetOutputs(ioValues); // must follow since eInit sets the direction and enable
+   digitalIo.SetOutputs(ioValues); // must follow since eInit sets the direction and enable outputs
 
    Camera cam;
    bool cameraInuse = false;
@@ -175,8 +197,21 @@ int main(int argc, char* args[]){
             cameraInuse = false;
          } // end if 
       } // end if 
-      
 
+
+      // read PI temp every n seconds
+      if(pitr.GetStatus() == ReaderStatus::NotStarted){
+         pitr.ReadAfterSec(ac.piTempReadIntervalSec);
+      }
+      else if(pitr.GetStatus() == ReaderStatus::Complete){
+         temperature = pitr.GetData();
+         pitr.ResetStatus();
+      }
+      else if(pitr.GetStatus() == ReaderStatus::Error) {
+         cout << pitr.GetError() << endl;
+         pitr.ResetStatus();
+      } // end if 
+ 
       // read Si7021 temp and humidity every n seconds
       if(si7021r.GetStatus() == ReaderStatus::NotStarted){
          si7021r.ReadAfterSec(2);
@@ -185,8 +220,15 @@ int main(int argc, char* args[]){
          Si7021Data data = si7021r.GetData();
          si7021r.ResetStatus();
 
-         cout << "si7021: " << data.temperature << data.TemperatureUnits
-                            << ", " << data.humidity << data.humidityUnits << endl; 
+         // write sensor data to db 
+         int sensorReadResult = udb.AddOneSensorDataRow(GetSqlite3DateTime(),  
+                                                        data.temperature,
+                                                        data.TemperatureUnits,
+                                                        data.humidity,
+                                                        data.humidityUnits); 
+         if(sensorReadResult == -1) {
+            cout << udb.GetErrorStr() << endl;
+         } // end if 
 
       }
       else if(si7021r.GetStatus() == ReaderStatus::Error) {
