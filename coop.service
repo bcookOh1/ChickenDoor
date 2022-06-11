@@ -1,0 +1,14 @@
+[Unit]
+Description=run the smart chicken coop program
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=coop -c config_1.json -s
+WorkingDirectory=/home/bjc/coop/exe/
+StandardOutput=append:/home/bjc/log1.log
+StandardError=append:/home/bjc/log1.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
