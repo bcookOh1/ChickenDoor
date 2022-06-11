@@ -111,7 +111,7 @@ string IoToLine(const IoValues &ioValues){
 } // end IoToString
 
 
-/*
+
 int ReadBoardTemperature(string &temperature){
    temperature = "";
    string filepath = "/sys/class/thermal/thermal_zone0/temp";
@@ -147,7 +147,6 @@ void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string temperature) {
    return;
 } // end UpdateDoorStateDB
 
-*/
 
 
 

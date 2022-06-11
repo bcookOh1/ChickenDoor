@@ -23,6 +23,7 @@
 #include <type_traits>
 
 #include "CommonDef.h"
+#include "UpdateDatabase.h"
 #include "PrintUtils.h"
 
 using namespace std::chrono_literals;
@@ -40,8 +41,10 @@ IoValues MakeIoValuesMap(const vector<IoConfig> &io);
 void PrintIo(const IoValues &ioValues);
 string IoToString(const IoValues &ioValues);
 string IoToLine(const IoValues &ioValues);
-//int ReadBoardTemperature(string &temperature);
-//void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string temperature);
+
+int ReadBoardTemperature(string &temperature);
+void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string temperature);
+
 
 // conditional print  with optional newline
 // used with command line SilentFlag 
