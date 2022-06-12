@@ -135,15 +135,14 @@ int main(int argc, char* args[]){
    NoBlockTimer nbTimer;
    Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
 
-   // lambda as callback from the state machine to set a gpio output
+   // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
-   auto SetOutputFromSM = [&] (string name, unsigned value){
-      ioValues[name] = value;
-      cout << "cb: " << name << "=" << value << endl;  
+   auto SetDoorStateTableFromSM = [&] (DoorState ds){
+       UpdateDoorStateDB(ds, udb, light, temperature);
    }; // end lambda
 
    // set the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
-   ccsm.SetStateMachineCB(std::bind(SetOutputFromSM, std::placeholders::_1, std::placeholders::_2 ));
+   ccsm.SetStateMachineCB(std::bind(SetDoorStateTableFromSM, std::placeholders::_1 ));
 
    sml::sm<Ccsm> sm(ccsm);
    bool ready = false;
@@ -198,7 +197,6 @@ int main(int argc, char* args[]){
          } // end if 
       } // end if 
 
-
       // read PI temp every n seconds
       if(pitr.GetStatus() == ReaderStatus::NotStarted){
          pitr.ReadAfterSec(ac.piTempReadIntervalSec);
@@ -225,7 +223,8 @@ int main(int argc, char* args[]){
                                                         data.temperature,
                                                         data.TemperatureUnits,
                                                         data.humidity,
-                                                        data.humidityUnits); 
+                                                        data.humidityUnits,
+                                                        light, "lx"); 
          if(sensorReadResult == -1) {
             cout << udb.GetErrorStr() << endl;
          } // end if 
