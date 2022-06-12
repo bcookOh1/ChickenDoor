@@ -2,14 +2,14 @@
 drop table door_state;
 
 create table door_state (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  rec_time text not null,
-  state int not null,
-  light text not null,
-  pi_temp text not null
+  'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+  'timestamp' text not null,
+  'state' int not null,
+  'light' text not null,
+  'pi_temp' text not null
 );
 
-insert into door_state (rec_time, state, light, pi_temp)
+insert into door_state (timestamp, state, light, pi_temp)
 values
  ('2020-07-17 13:10:00',1,'500.0','30.5'),
  ('2020-07-17 13:12:00',2,'500.0','30.5'),
@@ -28,14 +28,14 @@ order by id desc;
 drop table readings;
 
 create table readings (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  timestamp text not null,
-  temperature text not null,
-  temperature_units text not null,
-  humidity text not null,
-  humidity_units text not null,
-  light text not null,
-  light_units text not null
+  'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+  'timestamp' text not null,
+  'temperature' text not null,
+  'temperature_units' text not null,
+  'humidity' text not null,
+  'humidity_units' text not null,
+  'light' text not null,
+  'light_units' text not null
 );
 
 insert into readings (timestamp, temperature, temperature_units, humidity, humidity_units, light, light_units)
