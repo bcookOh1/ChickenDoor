@@ -139,8 +139,8 @@ int ReadBoardTemperature(string &temperature){
 } // end ReadBoardTemperature 
 
 
-void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string temperature) {
-   int result = udb.AddOneDoorStateRow(GetSqlite3DateTime(), static_cast<int>(ds), temperature);
+void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string &light, string &temperature) {
+   int result = udb.AddOneDoorStateRow(GetSqlite3DateTime(), static_cast<int>(ds), light, temperature);
    if(result != 0){
       cout << "database write error: " << udb.GetErrorStr() << endl; 
    } // end if 
