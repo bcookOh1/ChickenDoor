@@ -51,7 +51,7 @@
 
          while ($row = $result->fetchArray()) {
 
-            $rec_time = $row['rec_time'];
+            $rec_time = $row['timestamp'];
             $stateStr = PrintState($row['state']);
             $tempC = $row['pi_temp'];
             $lightLevel = $row['light'];
