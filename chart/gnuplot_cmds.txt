@@ -1,0 +1,133 @@
+
+
+
+
+set key autotitle columnhead
+
+
+plot 'readings.txt' using 1:3 w l
+plot 'readings.txt' using 2:3 w l,'readings.txt' using 2:4 w l
+
+
+timecolumn function
+timecolumn(N,”timeformat”) int, string time data from column N during data input.
+
+
+plot 'readings.txt' using 2:3 timecolumn(2,"%Y-%m-%d %H:%M:%S") w l,'readings.txt' using 2:4 timecolumn("%Y-%m-%d %H:%M:%S") w l
+
+
+#single plot
+set terminal pngcairo size 800,400
+set output 'chart.png'
+set style line 1 lc 'dark-red' lw 2
+set style line 2 lc 'blue' lw 2
+set title 'Garage Temperature and Humidity' font ',12'
+set border 3 lw 2
+set key autotitle columnhead
+set key bottom left
+set key font ',10'
+set grid
+set tics font ',10'
+set tics nomirror
+set ylabel 'degF or %' font ',10'
+set xlabel 'hour:minute' font ',10'
+set xlabel offset -1
+set datafile separator ','
+set xdata time
+set timefmt '%Y-%m-%d %H:%M:%S'
+set format x '%H:%M'
+set ytics 0,10,100
+set xtics rotate by 45 offset -2.3,-1.2
+plot [] [0:100] 'readings.txt' using 2:3 w l ls 1,'readings.txt' using 2:4 w l ls 2
+
+
+#stacked plots
+set terminal png size 600,600
+set output "ri.png"
+set datafile separator ","
+set key autotitle columnhead
+set timefmt "%Y-%m-%d %H:%M:%S"
+set multiplot layout 2, 1 title "Garage Temperature and Humidity" font ",14"
+set title "Temperature in degF"
+set xdata time
+set format x "%m-%d\n%H:%M"
+set key off
+plot [] [0:100] 'readings.txt' using 2:3 w l
+set title "% Relative Humidity"
+set xdata time
+set format x "%m-%d\n%H:%M"
+set key off
+plot [] [0:100] 'readings.txt' using 2:4 w l
+
+
+/*
+   gp("set terminal png size 600,600");
+   gp("set output \"ri.png\"");
+   gp("set datafile separator \",\"");
+   gp("set key autotitle columnhead");
+   gp("set xdata time");
+   gp("set timefmt \"%Y-%m-%d %H:%M:%S\"");
+   gp("set format x \"%m-%d\n%H:%M\"");
+
+   // single plot w/ two traces
+   gp("set xtics rotate by 90");
+   gp("plot \"readings.txt\" using 2:3 w l,\"readings.txt\" using 2:4 w l");
+*/   
+
+   // multi plot, with stacked plots
+   gp("set terminal png size 600,600");
+   gp("set output 'ri.png'");
+   gp("set datafile separator ','");
+   gp("set key autotitle columnhead");
+   gp("set timefmt '%Y-%m-%d %H:%M:%S'");
+   gp("set multiplot layout 2, 1 title 'Garage Temperature and Humidity' font ',14'");
+   gp("set title 'Temperature in degF'");
+   gp("set xdata time");
+   gp("set format x \"%m-%d\\n%H:%M\"");
+   gp("set key off");
+   gp("plot [] [0:100] 'readings.txt' using 2:3 w l");
+   gp("set title '% Relative Humidity'");
+   gp("set xdata time");
+   gp("set format x \"%m-%d\\n%H:%M\"");
+   gp("set key off");
+   gp("plot [] [0:100] 'readings.txt' using 2:4 w l");
+
+
+set style line 1 lc rgb '#8b0000' lw 2
+set style line 2 lc 'blue' pt 7 ps 0.9
+show style line
+#then use ls 1 or 2 in plot
+set grid ytics lt 0 lw 1 lc rgb "#bbbbbb"
+set grid xtics lt 0 lw 1 lc rgb "#bbbbbb"
+set tics scale 1.5
+set border lw 2
+set tics font ',14'
+set ylabel offset -1
+rep
+
+
+   gp("set terminal pngcairo size 800,400");
+   gp("set output 'chart.png'");
+   gp("set style line 1 lc 'dark-red' lw 2");
+   gp("set style line 2 lc 'blue' lw 2");
+   gp("set title 'Garage Temperature and Humidity' font ',12'");
+   gp("set border 3 lw 2");
+   gp("set key autotitle columnhead");
+   gp("set key bottom left");
+   gp("set key font ',10'");
+   gp("set grid");
+   gp("set tics font ',10'");
+   gp("set tics nomirror");
+   gp("set ylabel 'degF or %' font ',10'");
+   gp("set xlabel 'hour:minute' font ',10'");
+   gp("set xlabel offset -1");
+   gp("set datafile separator ','");
+   gp("set xdata time
+   gp("set timefmt '%Y-%m-%d %H:%M:%S'");
+   gp("set format x '%H:%M'");
+   gp("set ytics 0,10,100");
+   gp("set xtics rotate by 45 offset -2.3,-1.2");
+   gp("plot [] [0:100] 'readings.txt' using 2:3 w l ls 1,'readings.txt' using 2:4 w l ls 2");
+
+
+
