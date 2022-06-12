@@ -33,24 +33,31 @@ public:
   int CommitAndCloseDB();
 
   int AddDoorStateRow(const string &rec_time, 
-                      int state, 
+                      int state,
+                      const string &light, 
                       const string &temperature);
 
   int AddOneDoorStateRow(const string &rec_time, 
                          int state, 
+                         const string &light,
                          const string &temperature);
 
   int AddSensorDataRow(const string &timeStamp, 
                        const string &temperature,
                        const string &temperature_units,
                        const string &humidity,
-                       const string &humidity_units);
+                       const string &humidity_units,
+                       const string &light,
+                       const string &light_units);
+
 
   int AddOneSensorDataRow(const string &timeStamp, 
                          const string &temperature,
                          const string &temperature_units,
                          const string &humidity,
-                         const string &humidity_units);
+                         const string &humidity_units,
+                         const string &light,
+                         const string &light_units);
 
   string GetErrorStr() { return _errorStr; }
 
