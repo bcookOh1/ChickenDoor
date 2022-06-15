@@ -30,15 +30,16 @@ int Tsl2591::PowerOn(bool on){
 } // end PowerOn
 
 
-unsigned char Tsl2591::GetDeviceId(){
-   unsigned char ret = 0;
+int Tsl2591::ReadDeviceId(){
+   int ret = 0;
+   _id = 0;
 
    unsigned char command = TSL2591_COMMAND_BITS | TSL2591_REGISTER_ID;  
    if(write(_fd, &command, 1) == 1){
             
       unsigned char data[1] = {0};
       if(read(_fd, data, 1) == 1){
-         ret = data[0];
+         _id = data[0];
       }
       else {
          ret = -1;
@@ -52,18 +53,19 @@ unsigned char Tsl2591::GetDeviceId(){
    } // end if 
 
    return ret;
-} // end GetDeviceId
+} // end ReadDeviceId
 
 
-unsigned char Tsl2591::GetDeviceStatus(){
-   unsigned char ret = 0;
+int Tsl2591::ReadDeviceStatus(){
+   int ret = 0;
+   _status = 0;
 
    unsigned char command = TSL2591_COMMAND_BITS | TSL2591_REGISTER_STATUS;  
    if(write(_fd, &command, 1) == 1){
             
       unsigned char data[1] = {0};
       if(read(_fd, data, 1) == 1){
-         ret = data[0];
+         _status = data[0];
       }
       else {
          ret = -1;
@@ -77,7 +79,7 @@ unsigned char Tsl2591::GetDeviceStatus(){
    } // end if 
 
    return ret;
-} // end GetDeviceStatus
+} // end ReadDeviceStatus
 
 
 int Tsl2591::SetIntegrationAndGain(unsigned char gain, unsigned char integration){
@@ -227,7 +229,7 @@ int Tsl2591::ReadSensor(){
          return -1;
       } // end if 
  
-      this_thread::sleep_for(chrono::milliseconds(50ms));
+      this_thread::sleep_for(chrono::milliseconds(100ms));
 
       result = PowerOn(true);
       if(result != 0) {
@@ -235,7 +237,7 @@ int Tsl2591::ReadSensor(){
          return -1;
       } // end if 
 
-      this_thread::sleep_for(chrono::milliseconds(1000ms));
+      this_thread::sleep_for(chrono::milliseconds(1200ms));
 
       result = ReadLightLevels();
       if(result != 0) {
@@ -244,10 +246,18 @@ int Tsl2591::ReadSensor(){
          return -1;
       } // end if 
 
-      // this status is from the sensor internally, look at 
-      // lowest bit only 
-      unsigned char status = (GetDeviceStatus() & 0x01);
+      // this status is from the sensor internally,
+      unsigned char status = 0;   // 0 = not a valid read
+      result = ReadDeviceStatus();
+      if(result == 0) {
 
+         // look at lowest bit only, a good read == 1
+         status = (GetDeviceStatus()  & 0x01);
+      }
+      else {
+         ret = -1;
+      } // end if 
+      
       result = PowerOn(false);
       if(result != 0) {
          ret = -1;

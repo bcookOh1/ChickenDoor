@@ -106,13 +106,15 @@ public:
 
    float GetLightLevel() {return _lightLevel;}
    unsigned GetRawLightLevel() {return _rawLightLevel;}
+   unsigned char GetDeviceStatus() {return _status;}
+   unsigned char GetDeviceId() {return _id;}
    string LightLevelToString();
 
 private:
 
    int PowerOn(bool on);
-   unsigned char GetDeviceId();
-   unsigned char GetDeviceStatus();
+   int ReadDeviceId();
+   int ReadDeviceStatus();
    int SetIntegrationAndGain(unsigned char gain, unsigned char integration);
    int ReadLightLevels();
    int ReadRegister(unsigned char regNum, unsigned char &val);
@@ -122,6 +124,8 @@ private:
    float _lightLevel;
    float _gain;
    float _integration;
+   unsigned char _status;
+   unsigned char _id;
 
 }; // end class
 
