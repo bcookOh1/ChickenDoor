@@ -161,12 +161,12 @@ public:
          // obstruction
          state<MovingToClose> + event<eOnTime>[Obstructed] / [&] {PrintLn("ObstructionDetected"); KillTimer();} = state<ObstructionDetected>,
          state<ObstructionDetected> + event<eOnTime>[ReturnTrue] / [] {PrintLn("ObstructionPause"); } = state<ObstructionPause>,
-         state<ObstructionPause> + sml::on_entry<_> / [&] {_cb(DoorState::Obstruction); MotorEnable(false); StartTimer(3000);},
+         state<ObstructionPause> + sml::on_entry<_> / [&] {_cb(DoorState::Obstructed); MotorEnable(false); StartTimer(3000);},
          state<ObstructionPause> + event<eOnTime>[TimerDone] / [&] {PrintLn("PauseDone"); KillTimer();} = state<PauseDone>,
 
          state<PauseDone> + event<eOnTime>[Obstructed] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
-         state<PauseDone> + event<eOnTime>[!Obstructed] / [] {PrintLn("MovingToClose");} = state<MovingToClose>,
-
+         state<PauseDone> + event<eOnTime>[!Obstructed] / [] {PrintLn("MovingToClose");} = state<MovingToClose>
+/*
 // look at subchart for manual
 
          // manual mode 
@@ -203,6 +203,7 @@ public:
 
          state<ExitManual> + sml::on_entry<_> / [&] {ReadyFlag(false); MotorEnable(false); StartTimer(1000);},
          state<ExitManual> + event<eOnTime>[TimerDone] / state<HomingSlowUp>
+*/
 
       );
 
