@@ -70,7 +70,7 @@ const string CONFIG_LOOP_TIME_MS = "ChickenCoop.loop_time_ms";
 const string CONFIG_FAST_PWM_HZ = "ChickenCoop.fast_pwm_hz";
 const string CONFIG_SLOW_PWM_HZ = "ChickenCoop.slow_pwm_hz";
 const string CONFIG_HOMING_PWM_HZ = "ChickenCoop.homing_pwm_hz";
-const string CONFIG_PI_TEMP_READ_INTERVAL_SEC = "ChickenCoop.pi_temp_read_interval_sec";
+const string CONFIG_SENSOR_READ_INTERVAL_SEC = "ChickenCoop.sensor_read_interval_sec";
 
 
 // string values for digital io type 
@@ -149,6 +149,7 @@ struct AppConfig  {
       fastPwmHz = 0; 
       slowPwmHz = 0;
       homingPwmHz = 0;
+      sensorReadIntervalSec = 30;
    } // end ctor 
 
    // copy constructor
@@ -162,7 +163,7 @@ struct AppConfig  {
       fastPwmHz = rhs.fastPwmHz;
       slowPwmHz = rhs.slowPwmHz;
       homingPwmHz = rhs.homingPwmHz;
-      piTempReadIntervalSec = rhs.piTempReadIntervalSec;
+      sensorReadIntervalSec = rhs.sensorReadIntervalSec;
    } // end ctor
 
    // assignment operator 
@@ -176,7 +177,7 @@ struct AppConfig  {
       fastPwmHz = rhs.fastPwmHz;
       slowPwmHz = rhs.slowPwmHz;
       homingPwmHz = rhs.homingPwmHz;
-      piTempReadIntervalSec = rhs.piTempReadIntervalSec;
+      sensorReadIntervalSec = rhs.sensorReadIntervalSec;
       return *this;
    } // assignment operator
 
@@ -191,7 +192,7 @@ struct AppConfig  {
       fastPwmHz = 0;
       slowPwmHz = 0;
       homingPwmHz = 0;
-      piTempReadIntervalSec = 0;
+      sensorReadIntervalSec = 0;
    } // end Initialize
 
    string appName;               /// application name 
@@ -203,7 +204,7 @@ struct AppConfig  {
    int fastPwmHz;                /// fast door pwm hertz, used for opening
    int slowPwmHz;                /// slow door pwm hertz, used for closing 
    int homingPwmHz;              /// very slow door pwm hertz, homing and jogging 
-   int piTempReadIntervalSec;    /// the PI temperature read period in seconds 
+   int sensorReadIntervalSec;    /// the for all sensors read interval in seconds 
 }; // end struct 
 
 

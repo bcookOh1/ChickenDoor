@@ -1,7 +1,7 @@
 {
   "ChickenCoop": {
     "name": "chicken coop door",
-    "database_path": "/home/bjc/chick/exe/coop.db",
+    "database_path": "/home/bjc/coop/exe/coop.db",
     "door_state_table": "door_state",
     "sensor_table": "readings",
     "digital_io": [
@@ -65,7 +65,7 @@
     "fast_pwm_hz": 1200,
     "slow_pwm_hz": 1000,
     "homing_pwm_hz": 800,
-    "pi_temp_read_interval_sec": 30 
+    "sensor_read_interval_sec": 30 
 
   }
 }

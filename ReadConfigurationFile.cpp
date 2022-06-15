@@ -66,7 +66,7 @@ int ReadConfigurationFile::ReadIn() {
       _appConfig.fastPwmHz = GetScalarData<int>(tree, CONFIG_FAST_PWM_HZ);
       _appConfig.slowPwmHz = GetScalarData<int>(tree, CONFIG_SLOW_PWM_HZ);
       _appConfig.homingPwmHz = GetScalarData<int>(tree, CONFIG_HOMING_PWM_HZ);
-      _appConfig.piTempReadIntervalSec = GetScalarData<int>(tree, CONFIG_PI_TEMP_READ_INTERVAL_SEC);
+      _appConfig.sensorReadIntervalSec = GetScalarData<int>(tree, CONFIG_SENSOR_READ_INTERVAL_SEC);
 
    }
    catch(std::exception &e) {
