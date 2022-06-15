@@ -21,12 +21,15 @@ set xdata time
 set xtics rotate by 45 offset -2.3,-1.2
 set format x '%H:%M'
 
-set ylabel 'degF or %' font ',10'
-set ytics nomirror 0,10,100
+set ylabel 'degF and %' font ',10'
+set ytics 0,10
+set ytics nomirror
+set yrange [0:100]
 
 set y2label 'light (lx)' font ',10'
-set y2tics nomirror 0,100,1000
+set y2tics 0,100
+set y2range [0:1000]
 
 set datafile separator ','
 
-plot [] [] [] 'readings.txt' using 2:3 w l ls 1,'readings.txt' using 2:4 w l ls 2,'readings.txt' using 2:5 w l ls 3
+plot 'readings.txt' using 2:3 w l ls 1 axis x1y1, 'readings.txt' using 2:4 w l ls 2 axis x1y1, 'readings.txt' using 2:5 w l ls 3 axis x1y2
