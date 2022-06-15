@@ -84,7 +84,7 @@ int UpdateDatabase::CommitAndCloseDB(){
 } // end CommitAndCloseDB
 
 
-int UpdateDatabase::AddDoorStateRow(const string &rec_time, 
+int UpdateDatabase::AddDoorStateRow(const string &timestamp, 
                                     int state, 
                                     const string &light,
                                     const string &temperature) {
@@ -92,8 +92,8 @@ int UpdateDatabase::AddDoorStateRow(const string &rec_time,
    char *zErrMsg = 0;
 
    // build a insert sql command 
-   string sql = "insert into" + _dbDoorStateTable + "(rec_time, state, light, temperature) values ";
-   sql += "('" + rec_time  + "', " + lexical_cast<string>(state) + ", '" + light  + ", '" +  temperature + "')";
+   string sql = "insert into" + _dbDoorStateTable + "(timestamp, state, light, pi_temp) values ";
+   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + ", '" +  temperature + "')";
 
    // execute sql statement to insert a row
    int rc = sqlite3_exec(_db, sql.c_str(), callback, 0, &zErrMsg);
@@ -109,7 +109,7 @@ int UpdateDatabase::AddDoorStateRow(const string &rec_time,
 } // end AddDoorStateRow
 
 
-int UpdateDatabase::AddOneDoorStateRow(const string &rec_time, 
+int UpdateDatabase::AddOneDoorStateRow(const string &timestamp, 
                                        int state, 
                                        const string &light,
                                        const string &temperature) {
@@ -138,8 +138,8 @@ int UpdateDatabase::AddOneDoorStateRow(const string &rec_time,
 
 
    // build a insert sql command 
-   string sql = "insert into " + _dbDoorStateTable + "(rec_time, state, light, temperature) values ";
-   sql += "('" + rec_time  + "', " + lexical_cast<string>(state) + ", '" + light  + ", '" + temperature + "')";
+   string sql = "insert into " + _dbDoorStateTable + "(timestamp, state, light, pi_temp) values ";
+   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + "', '" + temperature + "')";
 
    // execute sql statement to insert a row
    rc = sqlite3_exec(_db, sql.c_str(), callback, 0, &zErrMsg);
@@ -181,7 +181,7 @@ int UpdateDatabase::AddSensorDataRow(const string &timestamp,
 
    // build a insert sql command 
    string sql = "insert into " + _dbSensorDataTable + "(timestamp, temperature, " +
-                "temperature_units, humidity, humidity_units) values";
+                "temperature_units, humidity, humidity_units, light, light_units) values";
    sql += "('" + timestamp  + "', '" + temperature + "', '" + temperature_units + "', '"
                + humidity  + "', '" + humidity_units + "', '"
                + light  + "', '" + light_units + "')";
@@ -234,7 +234,7 @@ int UpdateDatabase::AddOneSensorDataRow(const string &timestamp,
 
    // build a insert sql command 
    string sql = "insert into " + _dbSensorDataTable + "(timestamp, temperature, " +
-                "temperature_units, humidity, humidity_units) values";
+                "temperature_units, humidity, humidity_units, light, light_units) values";
    sql += "('" + timestamp  + "', '" + temperature + "', '" + temperature_units + "', '"
                + humidity  + "', '" + humidity_units + "', '"
                + light  + "', '" + light_units + "')";

@@ -32,12 +32,12 @@ public:
   int OpenAndBeginDB();
   int CommitAndCloseDB();
 
-  int AddDoorStateRow(const string &rec_time, 
+  int AddDoorStateRow(const string &timestamp, 
                       int state,
                       const string &light, 
                       const string &temperature);
 
-  int AddOneDoorStateRow(const string &rec_time, 
+  int AddOneDoorStateRow(const string &timestamp, 
                          int state, 
                          const string &light,
                          const string &temperature);
