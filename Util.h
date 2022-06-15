@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <deque>
 #include <map>
 #include <tuple>
 #include <iostream>
@@ -19,6 +20,7 @@
 #include <iomanip>
 #include <sstream>
 #include <ctime>
+#include <numeric> 
 #include <cassert>
 #include <type_traits>
 
@@ -199,6 +201,36 @@ private:
    } // end TimerTask
 
 }; // end class 
+
+template<typename T>
+class MovingAverage {
+public:
+   
+   MovingAverage(size_t length) {
+      _length = length;
+   } // end ctor  
+
+   ~MovingAverage() {
+       _queue.clear();
+   } // end dtor
+
+   void Add(T value){
+      _queue.push_back(value);
+      while( _queue.size() > _length) _queue.pop_front();
+      return;
+   } // Add 
+
+   void Clear() { _queue.clear();}
+   bool IsReady(){return _queue.size() == _length;} 
+
+   T GetAverage() {
+      return accumulate(_queue.begin(),_queue.end(), 0.0f) / _queue.size();
+   } // end GetAverage
+
+private:
+   size_t _length;
+   deque<T> _queue;
+}; // end class
 
 
 #endif // end header guard
