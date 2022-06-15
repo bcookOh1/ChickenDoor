@@ -35,7 +35,10 @@ using Ccsm = sm_chicken_coop;
 // Note: a space is required between -c and the config file 
 // example: sudo ./coop -c config_1.json 
 // note: if user types 'c' <enter> enable PrintLn()
-// note: if user types q enter quit program
+// note: if user types 'q' <enter> quit program
+// note: if user types 'u' <enter> to manually raise the door 
+// note: if user types 'd' <enter> to manually lower the door 
+// note: if user types 'a' <enter> to resume auto mode 
 int main(int argc, char* args[]){
 
    cout << "coop started with " << argc << " params" <<  endl;
@@ -131,6 +134,7 @@ int main(int argc, char* args[]){
    Si7021Reader si7021r;
    Tsl2591Reader tsl2591r;
    float light = 0.0f;
+   string lightStr = "0.00";
 
    NoBlockTimer nbTimer;
    Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
@@ -138,11 +142,11 @@ int main(int argc, char* args[]){
    // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
    auto SetDoorStateTableFromSM = [&] (DoorState ds){
-       UpdateDoorStateDB(ds, udb, light, temperature);
+       UpdateDoorStateDB(ds, udb, lightStr, temperature);
    }; // end lambda
 
    // set the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
-   ccsm.SetStateMachineCB(std::bind(SetDoorStateTableFromSM, std::placeholders::_1 ));
+   ccsm.SetStateMachineCB(std::bind(SetDoorStateTableFromSM, std::placeholders::_1));
 
    sml::sm<Ccsm> sm(ccsm);
    bool ready = false;
@@ -158,6 +162,12 @@ int main(int argc, char* args[]){
    WatchConsole wc;
    wc.Setup();
 
+   // manual mode: 
+   // 0 = resume auto mode 
+   // 1 = raise door ('u')
+   // 2 = lower door ('d')
+   int manualMode = 0;
+
    while(true) {
 
       // if user types 'c' <enter> enable PrintLn()
@@ -166,6 +176,11 @@ int main(int argc, char* args[]){
          string in = wc.GetInput();
          if(in[0] == 'q') break;
          sipc.Writer(in[0] == 'c' ? 1 : 0);
+         
+         if(in[0] == 'u')  manualMode = 1;
+         if(in[0] == 'd')  manualMode = 2;
+         if(in[0] == 'a')  manualMode = 0;
+
       } // end if 
       
       result = digitalIo.ReadAll(ioValues);
@@ -178,8 +193,11 @@ int main(int argc, char* args[]){
 
       digitalIo.SetOutputs(ioValues);
 
-      if(sm.is(sml::state<Failed>) == true) {cout << "failed state" << endl; break;}
-      if(sm.is(sml::state<Open>) == true) ready = true;
+      // bcook 6/14/2020 ignore this error for tonight
+      ////////////////////////////////////////////////////////////////
+      // if(sm.is(sml::state<Failed>) == true) {cout << "failed state" << endl; break;}
+      // if(sm.is(sml::state<Open>) == true) ready = true;
+       ready = true;
 
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          PrintLn("main: ObstructionDetected");
@@ -199,7 +217,7 @@ int main(int argc, char* args[]){
 
       // read PI temp every n seconds
       if(pitr.GetStatus() == ReaderStatus::NotStarted){
-         pitr.ReadAfterSec(ac.piTempReadIntervalSec);
+         pitr.ReadAfterSec(ac.sensorReadIntervalSec);
       }
       else if(pitr.GetStatus() == ReaderStatus::Complete){
          temperature = pitr.GetData();
@@ -212,11 +230,13 @@ int main(int argc, char* args[]){
  
       // read Si7021 temp and humidity every n seconds
       if(si7021r.GetStatus() == ReaderStatus::NotStarted){
-         si7021r.ReadAfterSec(2);
+         si7021r.ReadAfterSec(ac.sensorReadIntervalSec);
       }
       else if(si7021r.GetStatus() == ReaderStatus::Complete){
          Si7021Data data = si7021r.GetData();
          si7021r.ResetStatus();
+
+         string lightUnits = "lx";
 
          // write sensor data to db 
          int sensorReadResult = udb.AddOneSensorDataRow(GetSqlite3DateTime(),  
@@ -224,7 +244,7 @@ int main(int argc, char* args[]){
                                                         data.TemperatureUnits,
                                                         data.humidity,
                                                         data.humidityUnits,
-                                                        light, "lx"); 
+                                                        lightStr, lightUnits); 
          if(sensorReadResult == -1) {
             cout << udb.GetErrorStr() << endl;
          } // end if 
@@ -240,14 +260,26 @@ int main(int argc, char* args[]){
 
          // read Tsl2591 light level every n seconds
          if(tsl2591r.GetStatus() == ReaderStatus::NotStarted){
-            tsl2591r.ReadAfterSec(2);
+            tsl2591r.ReadAfterSec(ac.sensorReadIntervalSec);
          }
          else if(tsl2591r.GetStatus() == ReaderStatus::Complete){
             Tsl2591Data data = tsl2591r.GetData();
             tsl2591r.ResetStatus();
 
-            light = data.lightLevel;
-            cout << "tsl2591: " << data.lightLevel << ", " << data.rawlightLevel << endl; 
+            ////////////////////////////////////////////////
+            // set the light level in manual mode 
+            if(manualMode == 1){ // raise
+               light = 2000.0f;
+            }
+            else if(manualMode == 2){ // lower
+               light = 0.0f;
+            }
+            else { // resume auto
+               light = data.lightLevel;
+            } // end if 
+
+            lightStr = data.lightLevelStr;
+
          }
          else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
             cout << tsl2591r.GetError() << endl;
