@@ -17,6 +17,7 @@ int Tsl2591Reader::RunTask() {
 
       _sensorData.lightLevel = _sensor.GetLightLevel();
       _sensorData.rawlightLevel = _sensor.GetRawLightLevel(); 
+      _sensorData.lightLevelStr = _sensor.LightLevelToString();
 
       // required call to parent 
       Reader::SetStatus(ReaderStatus::Complete, "no error");

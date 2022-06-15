@@ -20,6 +20,7 @@ using namespace std;
 // data from the sensor 
 struct Tsl2591Data {
    float lightLevel;
+   string lightLevelStr;
    unsigned short rawlightLevel;
 }; // end struct
 
