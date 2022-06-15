@@ -3,7 +3,7 @@
 <html> 
    <head>
       <link href="coop.css" rel="stylesheet">
-      <title>Garage Door Monitor</title>
+      <title>Laura and Jess' Smart Chicken Coop</title>
    </head>
    <body>
       <?php 
@@ -24,10 +24,10 @@
                   return "MovingToOpen";
                   break;  
                case 5: 
-                  return "NoChange";
+                  return "Obstructed";
                   break;  
                default:  
-                  return "None";
+                  return "NoChange";
                   break;  
             }
          }
