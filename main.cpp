@@ -134,10 +134,12 @@ int main(int argc, char* args[]){
    Si7021Reader si7021r;
    Tsl2591Reader tsl2591r;
    float light = 0.0f;
+   float lightAvg = 0.0f;
    string lightStr = "0.00";
+   MovingAverage<float> lightQueue(7);
 
    NoBlockTimer nbTimer;
-   Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
+   Ccsm ccsm(ioValues, ac, pwm, nbTimer, lightAvg);
 
    // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
@@ -255,39 +257,37 @@ int main(int argc, char* args[]){
          si7021r.ResetStatus();
       } // end if 
 
-      // use features when the door is ready (homed) 
-      if(ready) {
+      // read Tsl2591 light level every n seconds
+      if(tsl2591r.GetStatus() == ReaderStatus::NotStarted){
+         tsl2591r.ReadAfterSec(ac.sensorReadIntervalSec);
+      }
+      else if(tsl2591r.GetStatus() == ReaderStatus::Complete){
+         Tsl2591Data data = tsl2591r.GetData();
+         tsl2591r.ResetStatus();
 
-         // read Tsl2591 light level every n seconds
-         if(tsl2591r.GetStatus() == ReaderStatus::NotStarted){
-            tsl2591r.ReadAfterSec(ac.sensorReadIntervalSec);
+         ////////////////////////////////////////////////
+         // set the light level in manual mode 
+         if(manualMode == 1){ // raise
+            light = 2000.0f;
          }
-         else if(tsl2591r.GetStatus() == ReaderStatus::Complete){
-            Tsl2591Data data = tsl2591r.GetData();
-            tsl2591r.ResetStatus();
-
-            ////////////////////////////////////////////////
-            // set the light level in manual mode 
-            if(manualMode == 1){ // raise
-               light = 2000.0f;
-            }
-            else if(manualMode == 2){ // lower
-               light = 0.0f;
-            }
-            else { // resume auto
-               light = data.lightLevel;
-            } // end if 
-
-            lightStr = data.lightLevelStr;
-
+         else if(manualMode == 2){ // lower
+            light = 0.0f;
          }
-         else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
-            cout << tsl2591r.GetError() << endl;
-            tsl2591r.ResetStatus();
+         else { // resume auto
+            light = data.lightLevel;
          } // end if 
-            
-      } // end if 
 
+         lightQueue.Add(light);
+         lightAvg = lightQueue.GetAverage();
+
+         lightStr = str(format("%f.1") % lightAvg);
+
+      }
+      else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
+         cout << tsl2591r.GetError() << endl;
+         tsl2591r.ResetStatus();
+      } // end if 
+            
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 
 
