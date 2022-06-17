@@ -34,11 +34,12 @@ using Ccsm = sm_chicken_coop;
 // -c <config_file>, a json file with the configuration 
 // Note: a space is required between -c and the config file 
 // example: sudo ./coop -c config_1.json 
-// note: if user types 'c' <enter> enable PrintLn()
-// note: if user types 'q' <enter> quit program
-// note: if user types 'u' <enter> to manually raise the door 
-// note: if user types 'd' <enter> to manually lower the door 
-// note: if user types 'a' <enter> to resume auto mode 
+// note: if user types p <enter> enable PrintLn()
+// note: if user types s <enter> disable PrintLn()
+// note: if user types q <enter> quit program
+// note: if user types u <enter> to manually raise the door 
+// note: if user types d <enter> to manually lower the door 
+// note: if user types a <enter> to resume auto mode 
 int main(int argc, char* args[]){
 
    cout << "coop started with " << argc << " params" <<  endl;
@@ -99,11 +100,11 @@ int main(int argc, char* args[]){
    IoValues ioValues = MakeIoValuesMap(ac.dIos);
 
    Rp4bPwm pwm(PwmNumber::Pwm1);
-   pwm.SetFrequenceHz(ac.homingPwmHz); 
+   pwm.SetFrequenceHz(ac.pwmHzHoming); 
    pwm.SetDutyCyclePercent(50);
    pwm.Enable(false);
 
-   ioValues["enable"] = 1u;     // 1 = off at stepper controller
+   ioValues["enable"] = 0u;     // 0 = on at stepper controller
    ioValues["direction"] = 1u;  // 1 = off at stepper controller
    ioValues["r1"] = 1u;
    ioValues["r2"] = 1u;
@@ -134,12 +135,11 @@ int main(int argc, char* args[]){
    Si7021Reader si7021r;
    Tsl2591Reader tsl2591r;
    float light = 0.0f;
-   float lightAvg = 0.0f;
-   string lightStr = "0.00";
-   MovingAverage<float> lightQueue(7);
+   string lightStr = "0.0";
+   SmoothingFilter<float> lightQueue(7); // try the queue size of 7 
 
    NoBlockTimer nbTimer;
-   Ccsm ccsm(ioValues, ac, pwm, nbTimer, lightAvg);
+   Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
 
    // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
@@ -165,23 +165,30 @@ int main(int argc, char* args[]){
    wc.Setup();
 
    // manual mode: 
-   // 0 = resume auto mode 
+   // 0 = auto mode 
    // 1 = raise door ('u')
    // 2 = lower door ('d')
    int manualMode = 0;
+   bool lightDataAvaliable = false;
 
    while(true) {
 
-      // if user types 'c' <enter> enable PrintLn()
+      // if user types p <enter> enable PrintLn()
+      // if user types s <enter> disable PrintLn()
       // if user types q enter quit program
+      // if user types u enter manual mode, door up
+      // if user types d  enter manual mode, door down
+      // if user types a auto mode
       if(wc.CheckForInput() == true) {
          string in = wc.GetInput();
          if(in[0] == 'q') break;
-         sipc.Writer(in[0] == 'c' ? 1 : 0);
+
+         if(in[0] == 'p')  sipc.Writer(1);
+         if(in[0] == 's')  sipc.Writer(0);
          
-         if(in[0] == 'u')  manualMode = 1;
-         if(in[0] == 'd')  manualMode = 2;
-         if(in[0] == 'a')  manualMode = 0;
+         if(in[0] == 'a')  manualMode = 0; // auto mode
+         if(in[0] == 'u')  manualMode = 1; // manual up
+         if(in[0] == 'd')  manualMode = 2; // manual down
 
       } // end if 
       
@@ -191,15 +198,22 @@ int main(int argc, char* args[]){
          break;
       } // end if 
 
-      sm.process_event(eOnTime{});
+      // set the events to the state machine
+      if(ready == false){
+         sm.process_event(eStartUp{});
+      } else if(lightDataAvaliable == true){
+         sm.process_event(eOnTime{});
+      } // end if 
 
       digitalIo.SetOutputs(ioValues);
 
       // bcook 6/14/2020 ignore this error for tonight
       ////////////////////////////////////////////////////////////////
       // if(sm.is(sml::state<Failed>) == true) {cout << "failed state" << endl; break;}
-      // if(sm.is(sml::state<Open>) == true) ready = true;
-       ready = true;
+
+      // 
+      if(sm.is(sml::state<HomingComplete>) == true) 
+         ready = true;
 
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          PrintLn("main: ObstructionDetected");
@@ -266,21 +280,24 @@ int main(int argc, char* args[]){
          tsl2591r.ResetStatus();
 
          ////////////////////////////////////////////////
-         // set the light level in manual mode 
+         // set the average light level in manual mode,
+         // this bypasses the average but still maintains the 
+         // queue so a return to auto mode moves the door
+         // baased on the current light levels 
+         lightQueue.Add(data.lightLevel);
+
          if(manualMode == 1){ // raise
-            light = 2000.0f;
+             light =  LIGHT_LEVEL_MANUAL_UP;
          }
          else if(manualMode == 2){ // lower
-            light = 0.0f;
+             light = LIGHT_LEVEL_MANUAL_DOWN;
          }
          else { // resume auto
-            light = data.lightLevel;
+             light = lightQueue.GetFilteredValue();
          } // end if 
 
-         lightQueue.Add(light);
-         lightAvg = lightQueue.GetAverage();
-
-         lightStr = str(format("%f.1") % lightAvg);
+         lightStr = str(format("%.1f") %  light);
+         lightDataAvaliable = true;
 
       }
       else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
@@ -293,7 +310,7 @@ int main(int argc, char* args[]){
 
    // all off  
    pwm.Enable(false);
-   ioValues["enable"] = 1u;
+   // ioValues["enable"] = 1u;
    ioValues["direction"] = 1u;
    digitalIo.SetOutputs(ioValues);
 
