@@ -63,9 +63,9 @@ int ReadConfigurationFile::ReadIn() {
       } // end for 
 
       _appConfig.loopTimeMS = GetScalarData<int>(tree, CONFIG_LOOP_TIME_MS);
-      _appConfig.fastPwmHz = GetScalarData<int>(tree, CONFIG_FAST_PWM_HZ);
-      _appConfig.slowPwmHz = GetScalarData<int>(tree, CONFIG_SLOW_PWM_HZ);
-      _appConfig.homingPwmHz = GetScalarData<int>(tree, CONFIG_HOMING_PWM_HZ);
+      _appConfig.pwmHzFast = GetScalarData<int>(tree, CONFIG_FAST_PWM_HZ);
+      _appConfig.pwmHzSlow = GetScalarData<int>(tree, CONFIG_SLOW_PWM_HZ);
+      _appConfig.pwmHzHoming = GetScalarData<int>(tree, CONFIG_HOMING_PWM_HZ);
       _appConfig.sensorReadIntervalSec = GetScalarData<int>(tree, CONFIG_SENSOR_READ_INTERVAL_SEC);
 
    }
