@@ -17,7 +17,7 @@ void Camera::StillAsync() {
    fname += ".jpg";
    _filename = fname;
    
-   string cmdString = "raspistill -o # -ex auto -awb auto -vf -hf -q 75 -n -t 800";
+   string cmdString = "raspistill -o # -ex auto -awb auto -q 75 -n -rot 270";
    boost::replace_first(cmdString, "#", _filename); 
 
    _fut = async(launch::async, TakeStillTask, cmdString);
