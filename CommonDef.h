@@ -82,6 +82,11 @@ const string INPUT_RESISTOR_NONE_STR = "none";
 const string INPUT_RESISTOR_PULLDOWN_STR = "pulldown";
 const string INPUT_RESISTOR_PULLUP_STR = "pullup";
 
+// light level constants used in the state machine and manual mode
+const float DAYTIME_LIGHT_LEVEL_THRESHOLD = 2000.0f; 
+const float LIGHT_LEVEL_MANUAL_UP = 2001.1f; 
+const float LIGHT_LEVEL_MANUAL_DOWN = -1.0f; 
+
 
 // define a copyable struct for gpio configurations 
 struct IoConfig {
@@ -146,9 +151,9 @@ struct AppConfig  {
    // default constructor
    AppConfig() { 
       loopTimeMS = 0; 
-      fastPwmHz = 0; 
-      slowPwmHz = 0;
-      homingPwmHz = 0;
+      pwmHzFast = 0; 
+      pwmHzSlow = 0;
+      pwmHzHoming = 0;
       sensorReadIntervalSec = 30;
    } // end ctor 
 
@@ -160,9 +165,9 @@ struct AppConfig  {
       dbSensorTable = rhs.dbSensorTable;
       dIos = rhs.dIos;
       loopTimeMS = rhs.loopTimeMS;
-      fastPwmHz = rhs.fastPwmHz;
-      slowPwmHz = rhs.slowPwmHz;
-      homingPwmHz = rhs.homingPwmHz;
+      pwmHzFast = rhs.pwmHzFast;
+      pwmHzSlow = rhs.pwmHzSlow;
+      pwmHzHoming = rhs.pwmHzHoming;
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
    } // end ctor
 
@@ -174,9 +179,9 @@ struct AppConfig  {
       dbSensorTable = rhs.dbSensorTable;
       dIos = rhs.dIos;
       loopTimeMS = rhs.loopTimeMS;
-      fastPwmHz = rhs.fastPwmHz;
-      slowPwmHz = rhs.slowPwmHz;
-      homingPwmHz = rhs.homingPwmHz;
+      pwmHzFast = rhs.pwmHzFast;
+      pwmHzSlow = rhs.pwmHzSlow;
+      pwmHzHoming = rhs.pwmHzHoming;
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
       return *this;
    } // assignment operator
@@ -189,9 +194,9 @@ struct AppConfig  {
       dbSensorTable = "";
       dIos.clear();
       loopTimeMS = 0;
-      fastPwmHz = 0;
-      slowPwmHz = 0;
-      homingPwmHz = 0;
+      pwmHzFast = 0;
+      pwmHzSlow = 0;
+      pwmHzHoming = 0;
       sensorReadIntervalSec = 0;
    } // end Initialize
 
@@ -201,9 +206,9 @@ struct AppConfig  {
    string dbSensorTable;         /// name of the sensor reading table 
    vector<IoConfig> dIos;        /// a list of the digital io points 
    int loopTimeMS;               /// the program's read input loop time in ms
-   int fastPwmHz;                /// fast door pwm hertz, used for opening
-   int slowPwmHz;                /// slow door pwm hertz, used for closing 
-   int homingPwmHz;              /// very slow door pwm hertz, homing and jogging 
+   int pwmHzFast;                /// fast door pwm hertz, used for opening
+   int pwmHzSlow;                /// slow door pwm hertz, used for closing 
+   int pwmHzHoming;              /// very slow door pwm hertz, homing and jogging 
    int sensorReadIntervalSec;    /// the for all sensors read interval in seconds 
 }; // end struct 
 
