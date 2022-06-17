@@ -203,27 +203,43 @@ private:
 }; // end class 
 
 template<typename T>
-class MovingAverage {
+class SmoothingFilter {
 public:
    
-   MovingAverage(size_t length) {
+   SmoothingFilter(size_t length) {
       _length = length;
    } // end ctor  
 
-   ~MovingAverage() {
+   ~SmoothingFilter() {
        _queue.clear();
    } // end dtor
 
-   void Add(T value){
-      _queue.push_back(value);
+   // Add will fill the queue with value 
+   // if the queue is not full 
+   void Add(T value) {
+
+      // add single value 
+      if(_queue.size() == _length){
+         _queue.push_back(value);
+      }
+      else {
+
+         // fill partially full queue with value
+         while( _queue.size() < _length)  
+            _queue.push_back(value);
+
+      } // end if 
+      
+      // maintain the queue size, use a while just to be safe 
       while( _queue.size() > _length) _queue.pop_front();
+      
       return;
-   } // Add 
+   } // end Add 
 
    void Clear() { _queue.clear();}
    bool IsReady(){return _queue.size() == _length;} 
 
-   T GetAverage() {
+   T GetFilteredValue() {
       return accumulate(_queue.begin(),_queue.end(), 0.0f) / _queue.size();
    } // end GetAverage
 
