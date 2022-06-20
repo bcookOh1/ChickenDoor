@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=coop -c config_1.json -s
+ExecStart=coop -c config_1.json
 WorkingDirectory=/home/bjc/coop/exe/
 StandardOutput=append:/home/bjc/log1.log
 StandardError=append:/home/bjc/log1.log
