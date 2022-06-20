@@ -116,15 +116,15 @@ public:
          return (_nbTimer.IsDone());
       }; // end TimerDone
 
-      auto IsDay = [this] () -> bool {
-         PrintLn((boost::format{ "+++ IsDay: %.1f" } %  _light).str());
-         return (_light >= DAYTIME_LIGHT_LEVEL_THRESHOLD);
-      }; // end IsDay
+      auto IsMorning = [this] () -> bool {
+         PrintLn((boost::format{ "+++ IsMorning: %.1f" } %  _light).str());
+         return (_light >= _ac.morningLight);
+      }; // end IsMorning
 
-      // auto IsNight = [this] () -> bool {
-      //    cout << "+++ IsNight " << str(format("%.1f") %  _light) << endl;
-      //    return (_light < DAYTIME_LIGHT_LEVEL_THRESHOLD);
-      // }; // end IsNight
+      auto IsNight = [this] () -> bool {
+         cout << "+++ IsNight " << str(format("%.1f") %  _light) << endl;
+         return (_light <= _ac.nightLight);
+      }; // end IsNight
 
       auto ReturnTrue = [] () -> bool {
          return true;
@@ -153,14 +153,14 @@ public:
 
          // normal sequence 
          state<Closed> + sml::on_entry<_> / [&] {_cb(DoorState::Closed); MotorSpeed(0); },
-         state<Closed> + event<eOnTime>[IsDay] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
+         state<Closed> + event<eOnTime>[IsMorning] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
 
          state<MovingToOpen> + sml::on_entry<_> / [&] {_cb(DoorState::MovingToOpen); MotorDirection(MoveUp); MotorSpeed(_ac.pwmHzFast); StartTimer(30000);},
          state<MovingToOpen> + event<eOnTime>[AtUp] / [&] {PrintLn("Open"); KillTimer();} = state<Open>,
          state<MovingToOpen> + event<eOnTime>[TimerDone] / [&] {PrintLn("Failed3");  MotorSpeed(0);} = state<Failed>,
 
          state<Open> + sml::on_entry<_> / [&] {_cb(DoorState::Open); MotorSpeed(0); },
-         state<Open> + event<eOnTime>[!IsDay] / [&] {PrintLn("MovingToClose"); KillTimer();} = state<MovingToClose>,
+         state<Open> + event<eOnTime>[IsNight] / [&] {PrintLn("MovingToClose"); KillTimer();} = state<MovingToClose>,
          state<Open> + event<eOnTime>[TimerDone] / [&] {PrintLn("Failed4");  MotorSpeed(0);} = state<Failed>,
 
          state<MovingToClose> + sml::on_entry<_> / [&] {_cb(DoorState::MovingToClose); MotorDirection(MoveDown); MotorSpeed(_ac.pwmHzSlow); StartTimer(30000);},
@@ -176,44 +176,6 @@ public:
 
          state<PauseDone> + event<eOnTime>[Obstructed] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
          state<PauseDone> + event<eOnTime>[!Obstructed] / [] {PrintLn("MovingToClose");} = state<MovingToClose>
-/*
-// look at subchart for manual
-
-         // manual mode 
-         // detect 
-         state<Closed> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
-         state<Open> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
-         state<MovingToOpen> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
-         state<MovingToClose> + event<eOnTime>[IsManual] / [&] {PrintLn("EnterManual");} = state<EnterManual>,
-
-         // enter manual mode 
-         state<EnterManual> + sml::on_entry<_> / [&] {MotorEnable(false); KillTimer();},
-
-         // manual open the door
-         state<EnterManual> + event<eOnTime>[(IsSwitchUp && !AtUp)] / [&] {
-               PrintLn("ManualMovingToOpen"); MotorDirection(MoveUp); MotorSpeed(_ac.pwmHzSlow); MotorEnable(true);
-            } = state<ManualMovingToOpen>,
-         
-         state<EnterManual> + event<eOnTime>[AtUp] / [&] {PrintLn("ManualOpen");} = state<ManualOpen>,
-         state<ManualOpen> + sml::on_entry<_> / [&] {MotorEnable(false);},
-
-         // manual close the door
-         state<EnterManual> + event<eOnTime>[(IsSwitchDown && !AtDown)] / [&] {
-               PrintLn("ManualMovingToClose"); MotorDirection(MoveDown); MotorSpeed(_ac.pwmHzSlow); MotorEnable(true);
-            } = state<ManualMovingToClose>,
-         
-         state<EnterManual> + event<eOnTime>[AtDown] / [&] {PrintLn("ManualClosed");} = state<ManualClosed>,
-         state<ManualClosed> + sml::on_entry<_> / [&] {MotorEnable(false);},
-
-         // exit manual 
-         state<ManualMovingToOpen> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
-         state<ManualOpen> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
-         state<ManualMovingToClose> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
-         state<ManualClosed> + event<eOnTime>[!IsManual] / [&] {PrintLn("ExitManual");} = state<ExitManual>,
-
-         state<ExitManual> + sml::on_entry<_> / [&] {ReadyFlag(false); MotorEnable(false); StartTimer(1000);},
-         state<ExitManual> + event<eOnTime>[TimerDone] / state<HomingSlowUp>
-*/
 
       );
 

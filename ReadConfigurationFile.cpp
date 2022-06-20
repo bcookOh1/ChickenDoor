@@ -66,6 +66,8 @@ int ReadConfigurationFile::ReadIn() {
       _appConfig.pwmHzFast = GetScalarData<int>(tree, CONFIG_FAST_PWM_HZ);
       _appConfig.pwmHzSlow = GetScalarData<int>(tree, CONFIG_SLOW_PWM_HZ);
       _appConfig.pwmHzHoming = GetScalarData<int>(tree, CONFIG_HOMING_PWM_HZ);
+      _appConfig.morningLight = GetScalarData<float>(tree, CONFIG_MORNING_LIGHT_LEVEL);
+      _appConfig.nightLight = GetScalarData<float>(tree, CONFIG_NIGHT_LIGHT_LEVEL);
       _appConfig.sensorReadIntervalSec = GetScalarData<int>(tree, CONFIG_SENSOR_READ_INTERVAL_SEC);
 
    }
