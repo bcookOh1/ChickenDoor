@@ -70,8 +70,9 @@ const string CONFIG_LOOP_TIME_MS = "ChickenCoop.loop_time_ms";
 const string CONFIG_FAST_PWM_HZ = "ChickenCoop.fast_pwm_hz";
 const string CONFIG_SLOW_PWM_HZ = "ChickenCoop.slow_pwm_hz";
 const string CONFIG_HOMING_PWM_HZ = "ChickenCoop.homing_pwm_hz";
+const string CONFIG_NIGHT_LIGHT_LEVEL = "ChickenCoop.night_light_level";
+const string CONFIG_MORNING_LIGHT_LEVEL = "ChickenCoop.morning_light_level";
 const string CONFIG_SENSOR_READ_INTERVAL_SEC = "ChickenCoop.sensor_read_interval_sec";
-
 
 // string values for digital io type 
 const string DIGITAL_INPUT_STR = "input";
@@ -83,8 +84,9 @@ const string INPUT_RESISTOR_PULLDOWN_STR = "pulldown";
 const string INPUT_RESISTOR_PULLUP_STR = "pullup";
 
 // light level constants used in the state machine and manual mode
-const float DAYTIME_LIGHT_LEVEL_THRESHOLD = 2000.0f; 
-const float LIGHT_LEVEL_MANUAL_UP = 2001.1f; 
+const float NIGHT_LIGHT_LEVEL_THRESHOLD = 2000.0f; 
+const float MORNING_LIGHT_LEVEL_THRESHOLD = 3000.0f; 
+const float LIGHT_LEVEL_MANUAL_UP = 10001.1f; 
 const float LIGHT_LEVEL_MANUAL_DOWN = -1.0f; 
 
 
@@ -150,11 +152,7 @@ struct AppConfig  {
 
    // default constructor
    AppConfig() { 
-      loopTimeMS = 0; 
-      pwmHzFast = 0; 
-      pwmHzSlow = 0;
-      pwmHzHoming = 0;
-      sensorReadIntervalSec = 30;
+      Initialize();
    } // end ctor 
 
    // copy constructor
@@ -169,6 +167,8 @@ struct AppConfig  {
       pwmHzSlow = rhs.pwmHzSlow;
       pwmHzHoming = rhs.pwmHzHoming;
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
+      morningLight = rhs.morningLight;
+      nightLight = rhs.nightLight;
    } // end ctor
 
    // assignment operator 
@@ -183,6 +183,8 @@ struct AppConfig  {
       pwmHzSlow = rhs.pwmHzSlow;
       pwmHzHoming = rhs.pwmHzHoming;
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
+      morningLight = rhs.morningLight;
+      nightLight = rhs.nightLight;
       return *this;
    } // assignment operator
 
@@ -198,6 +200,8 @@ struct AppConfig  {
       pwmHzSlow = 0;
       pwmHzHoming = 0;
       sensorReadIntervalSec = 0;
+      morningLight = 0.0f;
+      nightLight = 0.0f;
    } // end Initialize
 
    string appName;               /// application name 
@@ -209,7 +213,9 @@ struct AppConfig  {
    int pwmHzFast;                /// fast door pwm hertz, used for opening
    int pwmHzSlow;                /// slow door pwm hertz, used for closing 
    int pwmHzHoming;              /// very slow door pwm hertz, homing and jogging 
-   int sensorReadIntervalSec;    /// the for all sensors read interval in seconds 
+   int sensorReadIntervalSec;    /// for all sensors, the read interval in seconds 
+   float morningLight;           /// light threshold to open the door in morning  
+   float nightLight;             /// light threshold to close the door at night  
 }; // end struct 
 
 
