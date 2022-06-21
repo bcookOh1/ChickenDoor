@@ -38,6 +38,9 @@ string GetSqlite3DateTime();
 // return a date time string in format "YYYY-MM-DD HH-MM-SS" with the current date and time 
 string GetDateTimeFilename();
 
+// is time in AM
+bool IsAM();
+
 // 
 IoValues MakeIoValuesMap(const vector<IoConfig> &io);
 void PrintIo(const IoValues &ioValues);

@@ -47,6 +47,17 @@ string GetDateTimeFilename() {
     return ret;
 } // end GetDateTimeFilename
 
+bool IsAM() {
+
+   // get now time and convert to tm struct 
+   time_t nowTime;
+   time(&nowTime);
+   struct tm *timeinfo;
+   timeinfo = localtime(&nowTime);
+
+   return timeinfo->tm_hour < 12;
+} // end IsAM
+
 
 
 IoValues MakeIoValuesMap(const vector<IoConfig> &io) {
