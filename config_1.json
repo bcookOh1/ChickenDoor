@@ -65,8 +65,8 @@
     "fast_pwm_hz": 3000,
     "slow_pwm_hz": 2000,
     "homing_pwm_hz":2000,
-    "morning_light":3000,
-    "night_light":2000,
+    "morning_light_level":3000.0,
+    "night_light_level":2000.0,
     "sensor_read_interval_sec": 30 
 
   }
