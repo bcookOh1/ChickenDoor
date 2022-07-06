@@ -14,6 +14,7 @@
 #include <map>
 #include <thread>
 #include <chrono>
+#include <filesystem>
 
 
 using namespace std;
@@ -217,6 +218,49 @@ struct AppConfig  {
    float morningLight;           /// light threshold to open the door in morning  
    float nightLight;             /// light threshold to close the door at night  
 }; // end struct 
+
+
+// constant, enum, and string/cout utils for user selected mode 
+
+// this is where the php web page write the mode file 
+const filesystem::path MODE_FILE{ "/home/bjc/coop/exe/coop_mode.txt" };
+
+// the 3 mode plus an undefined used as a default 
+enum class UserSelectedMode : unsigned {
+   Undefined,
+   Manual_Up,
+   Manual_Down,
+   Auto_Mode
+}; // end enum
+
+// to string utility
+string UserSelectedModeToString(UserSelectedMode usm){
+   string ret;
+
+   switch (usm) {
+   case UserSelectedMode::Undefined:
+      ret = "Undefined";
+      break;
+   case UserSelectedMode::Manual_Up:
+      ret = "Manual_Up";
+      break;
+   case UserSelectedMode::Manual_Down:
+      ret = "Manual_Down";
+      break;
+   case UserSelectedMode::Auto_Mode:
+      ret = "Auto_Mode";
+      break;
+   } // end switch
+
+   return ret;
+} // end UserSelectedModeToString
+
+// util for stream/cout 
+ostream &operator<<(ostream &out, UserSelectedMode usm) {
+   out << UserSelectedModeToString(usm);
+   return out;
+} // end operator
+
 
 
 #endif // end header guard

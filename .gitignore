@@ -1,2 +1,3 @@
-wiringPi.h
-coop.db
+./door/door/wiringPi.h
+./exe/coop.db
+

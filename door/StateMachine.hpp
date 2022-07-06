@@ -118,12 +118,12 @@ public:
 
       auto IsMorning = [this] () -> bool {
          PrintLn((boost::format{ "+++ IsMorning: %.1f" } %  _light).str());
-         return (_light >= _ac.morningLight);
+         return (_light >= _ac.morningLigh && IsAM());
       }; // end IsMorning
 
       auto IsNight = [this] () -> bool {
          cout << "+++ IsNight " << str(format("%.1f") %  _light) << endl;
-         return (_light <= _ac.nightLight);
+         return (_light <= _ac.nightLight && !IsAM());
       }; // end IsNight
 
       auto ReturnTrue = [] () -> bool {

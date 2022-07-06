@@ -201,7 +201,8 @@ int main(int argc, char* args[]){
       // set the events to the state machine
       if(ready == false){
          sm.process_event(eStartUp{});
-      } else if(lightDataAvaliable == true){
+      } 
+      else if(lightDataAvaliable == true){
          sm.process_event(eOnTime{});
       } // end if 
 
