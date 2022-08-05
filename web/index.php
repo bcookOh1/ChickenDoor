@@ -13,7 +13,7 @@
 
          function WriteMode(string $mode) { 
 
-            $coop_ipc_path = "/home/bjc/coop/exe/coop_mode.txt";
+            $coop_ipc_path = "/home/bjc/coop/exe/user_input.txt";
             // echo $coop_ipc_path;
 
             $file = fopen($coop_ipc_path, "w");
@@ -143,25 +143,29 @@
         <input type="submit" name="button1" value="Manual UP"/>
         <input type="submit" name="button2" value="Manual Down"/>
         <input type="submit" name="button3" value="Auto Mode"/>
+        <input type="submit" name="button3" value="Take Picture"/>
 
 
-	<?php 
+      	<?php 
         
-          if(isset($_POST['button1'])) {
-             WriteMode("u\n");
-	     echo  "up";
-          }
-          else if(isset($_POST['button2'])) {
-             WriteMode("d\n");
-	     echo  "down";
-          }
-          else if(isset($_POST['button3'])) {
-             WriteMode("a\n");
-	     echo  "auto";
-          }
+            if(isset($_POST['button1'])) {
+               WriteMode("u\n");
+               echo  "up";
+            }
+            else if(isset($_POST['button2'])) {
+               WriteMode("d\n");
+               echo  "down";
+            }
+            else if(isset($_POST['button3'])) {
+               WriteMode("a\n");
+               echo  "auto";
+            }
+            else if(isset($_POST['button4'])) {
+               WriteMode("c\n");
+               echo  "take picture";
+            }
         
         ?>
-
 
      </form>
 
