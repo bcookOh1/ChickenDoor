@@ -1,18 +1,21 @@
 
 
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <chrono>
 #include <thread>
 #include <iostream>
 #include <iomanip>
+#include <functional> 
+#include <ctime>
+#include <boost/coroutine2/all.hpp>
 
+#include "CommonDef.h"
 #include "wiringPi.h"
 #include "ParseCommandLine.h"
 #include "ReadConfigurationFile.h"
 #include "DigitalIO.h"
 #include "Rp4bPwm.h"
-#include "CommonDef.h"
 #include "Util.h"
 #include "UpdateDatabase.h"
 #include "StateMachine.hpp"
@@ -21,12 +24,15 @@
 #include "Tsl2591Reader.h"
 #include "Si7021Reader.h"
 #include "PrintUtils.h"
-
+#include "UserInputIPC.h"
+#include "DateTimeUtils.h"
+#include "SunriseSunset.h"
 
 using namespace std;
-namespace filesys = boost::filesystem;
-namespace sml = boost::sml;
 using Ccsm = sm_chicken_coop;
+using namespace boost::coroutines2;
+namespace sml = boost::sml;
+namespace fs = std::filesystem;
 
 // entry point for the program
 // usage: ./coop [-h] -c <config_file> 
@@ -46,7 +52,7 @@ int main(int argc, char* args[]){
 
    // get and clean the exe name, used for process count
    string exeName;
-   filesys::path exePath(args[0]);
+   fs::path exePath(args[0]);
    if(exePath.has_stem()) {
      exeName = exePath.stem().string();
    }
@@ -106,9 +112,9 @@ int main(int argc, char* args[]){
 
    ioValues["enable"] = 0u;     // 0 = on at stepper controller
    ioValues["direction"] = 1u;  // 1 = off at stepper controller
-   ioValues["r1"] = 1u;
-   ioValues["r2"] = 1u;
-   ioValues["r3"] = 1u;
+   ioValues["r1"] = 0u;
+   ioValues["r2"] = 0u;
+   ioValues["r3"] = 0u;
    digitalIo.SetOutputs(ioValues);
 
    // read all now so the eInit{} in state machine has fresh data 
@@ -164,12 +170,23 @@ int main(int argc, char* args[]){
    WatchConsole wc;
    wc.Setup();
 
-   // manual mode: 
-   // 0 = auto mode 
-   // 1 = raise door ('u')
-   // 2 = lower door ('d')
-   int manualMode = 0;
+   // class to read the webpage user selected mode through ipc 
+   UserInputIPC usmIpc;
+
+   // mode is user selected mode from either cin or the web page through IPC 
+   UserInput mode = UserInput::Auto_Mode;
    bool lightDataAvaliable = false;
+
+   // setr address struct from the configuration
+   Address address{ac.houseNumber, ac.street, ac.city, ac.state, ac.zipCode};
+
+   SunriseSunset srss{address, Time2Check4NewSunriseSunset};
+   std::function<void(coroutine<SunriseSunsetStatus>::push_type &)> fn = 
+      std::bind(&SunriseSunset::FetchTimes, &srss, std::placeholders::_1);
+
+   // declare the coroutine GetSunriseSunsetTimes
+   coroutine<SunriseSunsetStatus>::pull_type GetSunriseSunsetTimes{ fn };
+
 
    while(true) {
 
@@ -186,11 +203,33 @@ int main(int argc, char* args[]){
          if(in[0] == 'p')  sipc.Writer(1);
          if(in[0] == 's')  sipc.Writer(0);
          
-         if(in[0] == 'a')  manualMode = 0; // auto mode
-         if(in[0] == 'u')  manualMode = 1; // manual up
-         if(in[0] == 'd')  manualMode = 2; // manual down
+         if(in[0] == 'a')  mode = UserInput::Auto_Mode; 
+         if(in[0] == 'u')  mode = UserInput::Manual_Up;
+         if(in[0] == 'd')  mode = UserInput::Manual_Down;
+         if(in[0] == 'c')  mode = UserInput::Take_Picture;
 
       } // end if 
+
+      // look for a new mode selection from the webpage 
+      if(usmIpc.NewModeFile() == true) {
+         if(usmIpc.ReadMode() == 0) {
+            mode = usmIpc.GetMode();
+            usmIpc.DeleteModeFile();
+            PrintLn((boost::format{ "new user mode: %1%" } % UserInputToString(mode)).str());
+         }
+         else {
+            PrintLn("read mode file error");
+         } // end if 
+      } // end if 
+
+      auto status = GetSunriseSunsetTimes().get();
+      if (status == SunriseSunsetStatus::SunRiseSetComplete) {
+         auto times = srss.GetTimes();
+         times.Print();
+      }
+      else if (status == SunriseSunsetStatus::Error) {
+         cout << "error" << srss.GetError() << endl << endl;
+      }// end if 
       
       result = digitalIo.ReadAll(ioValues);
       if(result != 0){
@@ -208,7 +247,7 @@ int main(int argc, char* args[]){
 
       digitalIo.SetOutputs(ioValues);
 
-      // bcook 6/14/2020 ignore this error for tonight
+      // bcook 6/14/2020 ignore this error for now
       ////////////////////////////////////////////////////////////////
       // if(sm.is(sml::state<Failed>) == true) {cout << "failed state" << endl; break;}
 
@@ -218,12 +257,19 @@ int main(int argc, char* args[]){
 
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          PrintLn("main: ObstructionDetected");
+      } // end if 
+
+      if(mode == UserInput::Take_Picture) {
+         PrintLn("main: Take Picture");
          
          if(cameraInuse == false) {
             cameraInuse = true;
             cam.StillAsync();
          } // end if
 
+         // do only once if user selects take picture
+         // so set to UserInput::Undefined 
+         mode = UserInput::Undefined;
       } // end if 
 
       if(cameraInuse == true) {
@@ -287,13 +333,13 @@ int main(int argc, char* args[]){
          // baased on the current light levels 
          lightQueue.Add(data.lightLevel);
 
-         if(manualMode == 1){ // raise
+         if(mode == UserInput::Manual_Up){ // raise
              light =  LIGHT_LEVEL_MANUAL_UP;
          }
-         else if(manualMode == 2){ // lower
+         else if(mode == UserInput::Manual_Down){ // lower
              light = LIGHT_LEVEL_MANUAL_DOWN;
          }
-         else { // resume auto
+         else { // resume auto or undefined so also resume auto
              light = lightQueue.GetFilteredValue();
          } // end if 
 
@@ -311,7 +357,6 @@ int main(int argc, char* args[]){
 
    // all off  
    pwm.Enable(false);
-   // ioValues["enable"] = 1u;
    ioValues["direction"] = 1u;
    digitalIo.SetOutputs(ioValues);
 
