@@ -19,9 +19,12 @@ dep = $(obj:.o=.d)  # one dependency file for each source
 # compiler flags, all warnings and use (c++2a) c++17 libraries, and make dependency files
 # the "CPPFLAGS" macro is automatically included in compile step (very confusing)
 # note: this version of boost interprocess works with c++17 but not c++2a.
-CPPFLAGS = -Wall -std=c++17 -MMD
+# -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+CPPFLAGS = -Wall -std=c++2a -MMD -fpermissive -DBOOST_BIND_GLOBAL_PLACEHOLDERS
 
-LFLAGS = -L/usr/lib/arm-linux-gnueabihf -lsqlite3 -lwiringPi -lpthread -lboost_system -lboost_filesystem -lrt
+LFLAGS = -L/usr/lib/arm-linux-gnueabihf -lsqlite3 -lwiringPi -lpthread -lstdc++fs -lboost_system $\
+         -lboost_date_time -lboost_coroutine -lboost_context -lrt
+# removed -lboost_filesystem, use std::filesystem linked with -lstdc++fs 
 
 # the executable to build
 TARGET = coop
