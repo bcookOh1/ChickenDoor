@@ -67,7 +67,15 @@
     "homing_pwm_hz":2000,
     "morning_light_level":3000.0,
     "night_light_level":2000.0,
-    "sensor_read_interval_sec": 30 
-
+    "sensor_read_interval_sec":30,
+    "sunrise_offset_minutes":30,
+    "sunset_offset_minutes":60,
+    "address": {
+      "house_number": "8243", 
+      "street": "Forest Beach Rd",
+      "city": "Watervliet",
+      "state": "Michigan",
+      "zip_code" : "49098" 
+    }
   }
 }
