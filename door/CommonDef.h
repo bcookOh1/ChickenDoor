@@ -9,13 +9,15 @@
 #ifndef COMMONDEF_H
 #define COMMONDEF_H
 
+
 #include <string>
 #include <string_view>
 #include <map>
 #include <thread>
 #include <chrono>
 #include <filesystem>
-
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -74,6 +76,13 @@ const string CONFIG_HOMING_PWM_HZ = "ChickenCoop.homing_pwm_hz";
 const string CONFIG_NIGHT_LIGHT_LEVEL = "ChickenCoop.night_light_level";
 const string CONFIG_MORNING_LIGHT_LEVEL = "ChickenCoop.morning_light_level";
 const string CONFIG_SENSOR_READ_INTERVAL_SEC = "ChickenCoop.sensor_read_interval_sec";
+const string CONFIG_SUNRISE_OFFSET_MINUTES = "ChickenCoop.sunrise_offset_minutes";
+const string CONFIG_SUNSET_OFFSET_MINUTES = "ChickenCoop.sunset_offset_minutes";
+const string CONFIG_ADDRESS_HOUSE_NUMBER = "ChickenCoop.address.house_number";
+const string CONFIG_ADDRESS_STREET = "ChickenCoop.address.street";
+const string CONFIG_ADDRESS_CITY = "ChickenCoop.address.city";
+const string CONFIG_ADDRESS_STATE = "ChickenCoop.address.state";
+const string CONFIG_ADDRESS_ZIP_CODE = "ChickenCoop.address.zip_code";
 
 // string values for digital io type 
 const string DIGITAL_INPUT_STR = "input";
@@ -89,6 +98,35 @@ const float NIGHT_LIGHT_LEVEL_THRESHOLD = 2000.0f;
 const float MORNING_LIGHT_LEVEL_THRESHOLD = 3000.0f; 
 const float LIGHT_LEVEL_MANUAL_UP = 10001.1f; 
 const float LIGHT_LEVEL_MANUAL_DOWN = -1.0f; 
+
+struct Address {
+   string house_number;
+   string street;
+   string city;
+   string state;
+   string zip_code;
+}; // end struct
+
+
+struct Coordinates {
+   string longitude;
+   string latitude;
+}; // end struct
+
+struct SunriseSunsetStringTimes {
+   string sunrise;
+   string sunset;
+   string day_length;
+   void Print() { cout << "sunrise: " << sunrise << ", sunset: " 
+                       << sunset << ", day_length: " 
+                       << day_length << endl; }
+}; // end struct
+
+
+// each day check for new Sunrise Sunset at this local time.
+// value chosen so Daylight saving time change happens (in US)
+// at 2am, so check just after that  
+const string Time2Check4NewSunriseSunset = "12:10:00";
 
 
 // define a copyable struct for gpio configurations 
@@ -170,6 +208,13 @@ struct AppConfig  {
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
       morningLight = rhs.morningLight;
       nightLight = rhs.nightLight;
+      sunriseOffsetMin = rhs.sunriseOffsetMin;
+      sunsetOffsetMin = rhs.sunsetOffsetMin;
+      houseNumber = rhs.houseNumber;
+      street = rhs.street;
+      city = rhs.city;
+      state = rhs.state;
+      zipCode = rhs.zipCode;
    } // end ctor
 
    // assignment operator 
@@ -186,6 +231,13 @@ struct AppConfig  {
       sensorReadIntervalSec = rhs.sensorReadIntervalSec;
       morningLight = rhs.morningLight;
       nightLight = rhs.nightLight;
+      sunriseOffsetMin = rhs.sunriseOffsetMin;
+      sunsetOffsetMin = rhs.sunsetOffsetMin;
+      houseNumber = rhs.houseNumber;
+      street = rhs.street;
+      city = rhs.city;
+      state = rhs.state;
+      zipCode = rhs.zipCode;
       return *this;
    } // assignment operator
 
@@ -203,6 +255,13 @@ struct AppConfig  {
       sensorReadIntervalSec = 0;
       morningLight = 0.0f;
       nightLight = 0.0f;
+      sunriseOffsetMin = 0;
+      sunsetOffsetMin = 0;
+      houseNumber = "";
+      street = "";
+      city = "";
+      state = "";
+      zipCode = "";
    } // end Initialize
 
    string appName;               /// application name 
@@ -217,47 +276,59 @@ struct AppConfig  {
    int sensorReadIntervalSec;    /// for all sensors, the read interval in seconds 
    float morningLight;           /// light threshold to open the door in morning  
    float nightLight;             /// light threshold to close the door at night  
+   int sunriseOffsetMin;         /// before/after sunrise offset minutes 
+   int sunsetOffsetMin;          /// before/after sunset offset minutes 
+   string houseNumber;
+   string street;
+   string city;
+   string state;
+   string zipCode;
 }; // end struct 
 
 
 // constant, enum, and string/cout utils for user selected mode 
 
 // this is where the php web page write the mode file 
-const filesystem::path MODE_FILE{ "/home/bjc/coop/exe/coop_mode.txt" };
+const filesystem::path MODE_FILE{ "/home/bjc/coop/exe/user_input.txt" };
 
 // the 3 mode plus an undefined used as a default 
-enum class UserSelectedMode : unsigned {
+enum class UserInput : unsigned {
    Undefined,
    Manual_Up,
    Manual_Down,
-   Auto_Mode
+   Auto_Mode,
+   Take_Picture
 }; // end enum
 
+
 // to string utility
-string UserSelectedModeToString(UserSelectedMode usm){
+inline string UserInputToString(UserInput usm){
    string ret;
 
    switch (usm) {
-   case UserSelectedMode::Undefined:
+   case UserInput::Undefined:
       ret = "Undefined";
       break;
-   case UserSelectedMode::Manual_Up:
+   case UserInput::Manual_Up:
       ret = "Manual_Up";
       break;
-   case UserSelectedMode::Manual_Down:
+   case UserInput::Manual_Down:
       ret = "Manual_Down";
       break;
-   case UserSelectedMode::Auto_Mode:
+   case UserInput::Auto_Mode:
       ret = "Auto_Mode";
+      break;
+   case UserInput::Take_Picture:
+      ret = "Take_Picture";
       break;
    } // end switch
 
    return ret;
-} // end UserSelectedModeToString
+} // end UserInputToString
 
 // util for stream/cout 
-ostream &operator<<(ostream &out, UserSelectedMode usm) {
-   out << UserSelectedModeToString(usm);
+inline ostream &operator<<(ostream &out, UserInput usm) {
+   out << UserInputToString(usm);
    return out;
 } // end operator
 
