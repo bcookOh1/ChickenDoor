@@ -69,6 +69,14 @@ int ReadConfigurationFile::ReadIn() {
       _appConfig.morningLight = GetScalarData<float>(tree, CONFIG_MORNING_LIGHT_LEVEL);
       _appConfig.nightLight = GetScalarData<float>(tree, CONFIG_NIGHT_LIGHT_LEVEL);
       _appConfig.sensorReadIntervalSec = GetScalarData<int>(tree, CONFIG_SENSOR_READ_INTERVAL_SEC);
+      _appConfig.sunriseOffsetMin = GetScalarData<int>(tree, CONFIG_SUNRISE_OFFSET_MINUTES);
+      _appConfig.sunsetOffsetMin = GetScalarData<int>(tree, CONFIG_SUNSET_OFFSET_MINUTES);
+
+      _appConfig.houseNumber = GetScalarData<string>(tree, CONFIG_ADDRESS_HOUSE_NUMBER);
+      _appConfig.street = GetScalarData<string>(tree, CONFIG_ADDRESS_HOUSE_NUMBER);
+      _appConfig.city = GetScalarData<string>(tree, CONFIG_ADDRESS_CITY);
+      _appConfig.state = GetScalarData<string>(tree, CONFIG_ADDRESS_STATE);
+      _appConfig.zipCode = GetScalarData<string>(tree, CONFIG_ADDRESS_ZIP_CODE);
 
    }
    catch(std::exception &e) {
