@@ -59,10 +59,15 @@ int CalcSunset(const ptime &pt, time_duration &dt, ptime &sunset);
 class Daytime {
 public:
    Daytime(int sunriseOffset, int sunsetOffset) : _daytime{0} {
-      _sunriseOffset = minutes{ sunriseOffset }; _sunsetOffset = minutes{ sunsetOffset };
+      _sunriseOffset = minutes{ sunriseOffset }; 
+      _sunsetOffset = minutes{ sunsetOffset };
    } // end ctor 
+
    ~Daytime() {}
-   void SetSunriseSunsetStringTimes(const ptime& sunrise, const ptime& sunset) { _sunrise = sunrise; _sunset = sunset; }
+
+   void SetSunriseSunsetTimes(const ptime& sunrise, const ptime& sunset) {
+       _sunrise = sunrise; _sunset = sunset; 
+   } // end SetSunriseSunsetTimes
    
    // the sunrise and sunset values are update each day, 
    // the sunset is always after sunrise, ptime variables include the date  
