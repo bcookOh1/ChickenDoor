@@ -145,7 +145,7 @@ int main(int argc, char* args[]){
    SmoothingFilter<float> lightQueue(7); // try the queue size of 7 
 
    NoBlockTimer nbTimer;
-   Ccsm ccsm(ioValues, ac, pwm, nbTimer, light);
+   Ccsm ccsm(ioValues, ac, pwm, nbTimer);
 
    // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
@@ -157,7 +157,7 @@ int main(int argc, char* args[]){
    ccsm.SetStateMachineCB(std::bind(SetDoorStateTableFromSM, std::placeholders::_1));
 
    sml::sm<Ccsm> sm(ccsm);
-   bool ready = false;
+   bool doorHomed = false;
 
    // move off Idle1 state
    sm.process_event(eInit{});
@@ -171,10 +171,17 @@ int main(int argc, char* args[]){
    wc.Setup();
 
    // class to read the webpage user selected mode through ipc 
-   UserInputIPC usmIpc;
+   UserInputIPC uiIpc;
 
-   // mode is user selected mode from either cin or the web page through IPC 
+   // mode and takePicture are user input from either cin or the web page through IPC 
    UserInput mode = UserInput::Auto_Mode;
+   UserInput takePicture = UserInput::Undefined;
+
+   // class to test if day or night
+   Daytime daytime{ac.sunriseOffsetMin, ac.sunsetOffsetMin};
+   bool daytimeDataAvailable = false;
+
+   // set true when the light averaging is saturated
    bool lightDataAvaliable = false;
 
    // setr address struct from the configuration
@@ -187,9 +194,9 @@ int main(int argc, char* args[]){
    // declare the coroutine GetSunriseSunsetTimes
    coroutine<SunriseSunsetStatus>::pull_type GetSunriseSunsetTimes{ fn };
 
-
    while(true) {
 
+      //////////////////////////////////////////////////////
       // if user types p <enter> enable PrintLn()
       // if user types s <enter> disable PrintLn()
       // if user types q enter quit program
@@ -206,31 +213,95 @@ int main(int argc, char* args[]){
          if(in[0] == 'a')  mode = UserInput::Auto_Mode; 
          if(in[0] == 'u')  mode = UserInput::Manual_Up;
          if(in[0] == 'd')  mode = UserInput::Manual_Down;
-         if(in[0] == 'c')  mode = UserInput::Take_Picture;
+         if(in[0] == 'c')  takePicture = UserInput::Take_Picture;
 
       } // end if 
 
+      // end command line inputs 
+      //////////////////////////////////////////////////////
+
+      //////////////////////////////////////////////////////
       // look for a new mode selection from the webpage 
-      if(usmIpc.NewModeFile() == true) {
-         if(usmIpc.ReadMode() == 0) {
-            mode = usmIpc.GetMode();
-            usmIpc.DeleteModeFile();
-            PrintLn((boost::format{ "new user mode: %1%" } % UserInputToString(mode)).str());
+      if(uiIpc.NewFile() == true) {
+         if(uiIpc.ReadUserInput() == 0) {
+            auto iuCmd = uiIpc.GetUserInput();
+            uiIpc.DeleteFile();
+            PrintLn((boost::format{ "new user input: %1%" } % UserInputToString(iuCmd)).str());
+
+            // separate out manual door commands from the take picture command  
+            if(iuCmd == UserInput::Take_Picture)
+               takePicture = UserInput::Take_Picture;
+            else 
+               mode = iuCmd;
+
          }
          else {
             PrintLn("read mode file error");
          } // end if 
       } // end if 
 
+      // end look for a new mode selection from the webpage 
+      //////////////////////////////////////////////////////
+
+      //////////////////////////////////////////////////////
+      // get sunrise sunset times   
       auto status = GetSunriseSunsetTimes().get();
       if (status == SunriseSunsetStatus::SunRiseSetComplete) {
          auto times = srss.GetTimes();
-         times.Print();
+         daytime.SetSunriseSunsetTimes(times.rise, times.set);
+         daytimeDataAvailable = true;
       }
       else if (status == SunriseSunsetStatus::Error) {
+         daytimeDataAvailable = false;
          cout << "error" << srss.GetError() << endl << endl;
-      }// end if 
+      } // end if 
+
+      // end get sunrise sunset times   
+      //////////////////////////////////////////////////////
+
+
+      //////////////////////////////////////////////////////
+      /// day night decision
+      // priority: user input then sunrise sunset then light sensor,
+      // The user commands are from the webpage.
+      //  
+
+      DoorCommand dc{DoorCommand::NoChange};
       
+      if(mode == UserInput::Manual_Up){ // raise
+             dc = DoorCommand::Open;
+      }
+      else if(mode == UserInput::Manual_Down){ // lower
+             dc = DoorCommand::Close;
+      }
+      else if(daytimeDataAvailable == true){
+
+         if(daytime.IsDaytime()){
+            dc = DoorCommand::Open;
+         }
+         else {
+            dc = DoorCommand::Close;
+         } // end if
+
+      } 
+      else if(lightDataAvaliable == true){
+
+         if(light > ac.morningLight && IsAM()) 
+            dc = DoorCommand::Open;
+         
+         if(light < ac.nightLight && !IsAM()) 
+            dc = DoorCommand::Close;
+
+      } // end if 
+
+      /// end day night decision
+      ////////////////////////////////////////////////////////////////
+      
+
+      ////////////////////////////////////////////////////////////////
+      // main control loop, read input solve logic, set outputs
+      // there are other input/outputs but the IO is the main things
+      // for the state machine 
       result = digitalIo.ReadAll(ioValues);
       if(result != 0){
          PrintLn((boost::format{ "read gpio error: %1%" } % digitalIo.GetErrorStr()).str());
@@ -238,14 +309,19 @@ int main(int argc, char* args[]){
       } // end if 
 
       // set the events to the state machine
-      if(ready == false){
+      if(doorHomed == false){
          sm.process_event(eStartUp{});
       } 
-      else if(lightDataAvaliable == true){
-         sm.process_event(eOnTime{});
+      else if(lightDataAvaliable == true || daytimeDataAvailable == true){
+         sm.process_event(eOnTime{dc});
       } // end if 
+      // note: do nothing on else 
 
       digitalIo.SetOutputs(ioValues);
+
+      // end main control loop
+      ////////////////////////////////////////////////////////////////
+
 
       // bcook 6/14/2020 ignore this error for now
       ////////////////////////////////////////////////////////////////
@@ -253,13 +329,15 @@ int main(int argc, char* args[]){
 
       // 
       if(sm.is(sml::state<HomingComplete>) == true) 
-         ready = true;
+         doorHomed = true;
 
       if(sm.is(sml::state<ObstructionDetected>) == true) {
          PrintLn("main: ObstructionDetected");
       } // end if 
 
-      if(mode == UserInput::Take_Picture) {
+      ////////////////////////////////////////////////////////////////
+      /// camera
+      if(takePicture == UserInput::Take_Picture) {
          PrintLn("main: Take Picture");
          
          if(cameraInuse == false) {
@@ -269,7 +347,7 @@ int main(int argc, char* args[]){
 
          // do only once if user selects take picture
          // so set to UserInput::Undefined 
-         mode = UserInput::Undefined;
+         takePicture = UserInput::Undefined;
       } // end if 
 
       if(cameraInuse == true) {
@@ -278,6 +356,10 @@ int main(int argc, char* args[]){
          } // end if 
       } // end if 
 
+      /// end camera
+      ////////////////////////////////////////////////////////////////
+
+      ////////////////////////////////////////////////////////////////
       // read PI temp every n seconds
       if(pitr.GetStatus() == ReaderStatus::NotStarted){
          pitr.ReadAfterSec(ac.sensorReadIntervalSec);
@@ -290,7 +372,11 @@ int main(int argc, char* args[]){
          cout << pitr.GetError() << endl;
          pitr.ResetStatus();
       } // end if 
+
+      // end read PI temp every n seconds
+      ////////////////////////////////////////////////////////////////
  
+      ////////////////////////////////////////////////////////////////
       // read Si7021 temp and humidity every n seconds
       if(si7021r.GetStatus() == ReaderStatus::NotStarted){
          si7021r.ReadAfterSec(ac.sensorReadIntervalSec);
@@ -318,6 +404,10 @@ int main(int argc, char* args[]){
          si7021r.ResetStatus();
       } // end if 
 
+      // end read Si7021 temp and humidity every n seconds
+      ////////////////////////////////////////////////////////////////
+
+      ////////////////////////////////////////////////////////////////
       // read Tsl2591 light level every n seconds
       if(tsl2591r.GetStatus() == ReaderStatus::NotStarted){
          tsl2591r.ReadAfterSec(ac.sensorReadIntervalSec);
@@ -326,31 +416,19 @@ int main(int argc, char* args[]){
          Tsl2591Data data = tsl2591r.GetData();
          tsl2591r.ResetStatus();
 
-         ////////////////////////////////////////////////
-         // set the average light level in manual mode,
-         // this bypasses the average but still maintains the 
-         // queue so a return to auto mode moves the door
-         // baased on the current light levels 
          lightQueue.Add(data.lightLevel);
-
-         if(mode == UserInput::Manual_Up){ // raise
-             light =  LIGHT_LEVEL_MANUAL_UP;
-         }
-         else if(mode == UserInput::Manual_Down){ // lower
-             light = LIGHT_LEVEL_MANUAL_DOWN;
-         }
-         else { // resume auto or undefined so also resume auto
-             light = lightQueue.GetFilteredValue();
-         } // end if 
+         light = lightQueue.GetFilteredValue();
 
          lightStr = str(format("%.1f") %  light);
          lightDataAvaliable = true;
-
       }
       else if(tsl2591r.GetStatus() == ReaderStatus::Error) {
          cout << tsl2591r.GetError() << endl;
          tsl2591r.ResetStatus();
       } // end if 
+
+      // end read Tsl2591 light level every n seconds
+      ////////////////////////////////////////////////////////////////
             
       this_thread::sleep_for(chrono::milliseconds(ac.loopTimeMS));
    } // end while 
