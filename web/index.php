@@ -1,6 +1,6 @@
 
 <!DOCTYPE html> 
-<html> 
+<html lang="en" > 
    <head>
       <link href="coop.css" rel="stylesheet">
       <title>Laura and Jess' Smart Chicken Coop</title>
@@ -54,13 +54,60 @@
                   break;  
             }
          } // end PrintState
-     
+
+         // this code looks for either case if fpath is a newly created 
+         // or modified file.
+         // return true is new or modified file, false wait timeout 
+         function WaitForNewOrChangesFile($fpath) {
+            
+            $counter = 0;
+            $found = false;
+            $lastMod = 0;
+            $newMod = 0;
+            define("MaxRetires", 10);
+
+            // get the last modification time/date
+            if (file_exists($fpath)){
+               $lastMod = filemtime($fpath);
+               // echo "lastMod: " . $lastMod . "\n";
+            } // end if 
+
+
+            // loop until a new/modified file is found or 
+            // retries are max-ed
+            while(true){
+
+               // clear the file_exists() and filemtime() cached results
+               clearstatcache(); 
+
+               // get the last modification time/date
+               if (file_exists($fpath)){
+                  $newMod = filemtime($fpath);
+                  // echo "newMod: " . $newMod . "\n";
+               } // end if 
+
+               if($lastMod != $newMod){
+                  $found = true;
+                  break;
+               } // end if 
+
+               sleep(1); // wait one second
+               $counter++; 
+               if($counter >= MaxRetires){
+                  break;
+               } // end if 
+
+            }  // end while
+
+            return $found;
+         } // end WaitForNewOrChangesFile
+   
 
          class GarageDB extends SQLite3 {
             function __construct() {
                $this->open('/home/bjc/coop/exe/coop.db');
-            }
-         }
+            } // end ctor 
+         } // end class
 
          $db = new GarageDB();
          $db->exec('begin');
@@ -134,36 +181,66 @@
 
          $filename = "chart.png";
          echo "<p class=\"current\"> the chart </p>";
-         echo "<img src=$filename width='600'/>";
+         echo "<img src=$filename alt='24 hour chart' width='600'/>";
 
+         // picture display
+         echo "<p class=\"current\">inside the coop</p>";
 
+         $imageFname = './pics/coop.jpg'; // note relative path is ok, absolute path didn't work
+         $imageSrc = $imageFname . '?' . filemtime($imageFname);
+
+         // note: the img id of 'coop_pic' used in RefreshImage()
+         echo "<img id='coop_pic' src=$imageSrc alt='chicken coop' width='600'/>";
+ 
       ?> 
+
+      <script type="text/JavaScript"> 
+    
+         // force update in cache by appending the time to the image src (fname)
+         // note: "coop_pic" is the image id  
+         function RefreshImage() {
+            var imgSrc = "<?php echo $imageFname . '?' . filemtime($imageFname); ?>";
+            var image = document.getElementById("coop_pic");
+            image.src = imgSrc;
+         } // end RefreshImage
+      
+      </script>
 
       <form method="post">
         <input type="submit" name="button1" value="Manual UP"/>
         <input type="submit" name="button2" value="Manual Down"/>
         <input type="submit" name="button3" value="Auto Mode"/>
-        <input type="submit" name="button3" value="Take Picture"/>
+        <input type="submit" name="button4" value="Take Picture"/>
 
 
       	<?php 
-        
+
+            // check for button press 
             if(isset($_POST['button1'])) {
                WriteMode("u\n");
-               echo  "up";
+               echo  "up ";
             }
             else if(isset($_POST['button2'])) {
                WriteMode("d\n");
-               echo  "down";
+               echo  "down ";
             }
             else if(isset($_POST['button3'])) {
                WriteMode("a\n");
-               echo  "auto";
+               echo  "auto ";
             }
             else if(isset($_POST['button4'])) {
                WriteMode("c\n");
-               echo  "take picture";
-            }
+               echo  "take picture ";
+
+               $res = WaitForNewOrChangesFile($imageFname);
+               if($res == true){
+                  echo "<script> RefreshImage(); </script>";
+               }
+               else {
+                  echo "no new image ";
+               } // end if 
+
+            } // end if 
         
         ?>
 
