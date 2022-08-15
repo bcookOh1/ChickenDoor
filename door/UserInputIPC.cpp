@@ -3,7 +3,7 @@
 
 
 UserInputIPC::UserInputIPC() : 
-   _mode{' '} {
+   _userInput{' '} {
 } // end ctor 
 
 
@@ -11,12 +11,12 @@ UserInputIPC::~UserInputIPC() {
 } // end dtor 
 
 
-bool UserInputIPC::NewModeFile() {
+bool UserInputIPC::NewFile() {
    return fs::exists(MODE_FILE);
-} // end NewModeFile
+} // end NewFile
 
 
-int UserInputIPC::ReadMode() {
+int UserInputIPC::ReadUserInput() {
    int ret = -1;
    string line;
 
@@ -30,7 +30,7 @@ int UserInputIPC::ReadMode() {
    infile.close();
 
    if (line.size() >= 1) {
-      _mode = line[0];
+      _userInput = line[0];
       ret = 0;
    }
    else {
@@ -38,18 +38,18 @@ int UserInputIPC::ReadMode() {
    } // end if 
 
    return ret;
-} // end GetMode 
+} // end ReadUserInput 
 
 
-bool UserInputIPC::DeleteModeFile() {
+bool UserInputIPC::DeleteFile() {
    return fs::remove(MODE_FILE);
-} // DeleteModeFile
+} // DeleteFile
 
 
-UserInput UserInputIPC::GetMode() {
+UserInput UserInputIPC::GetUserInput() {
    UserInput ret{ UserInput::Undefined };
 
-   switch (_mode) {
+   switch (_userInput) {
    case 'u':
       ret = UserInput::Manual_Up;
       break;
@@ -62,4 +62,4 @@ UserInput UserInputIPC::GetMode() {
    } // end switch
 
    return ret;
-} // end GetMode
+} // end GetUserInput

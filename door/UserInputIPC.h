@@ -15,12 +15,12 @@ public:
    UserInputIPC(); 
    ~UserInputIPC();
 
-   bool NewModeFile();
-   int ReadMode(); 
-   bool DeleteModeFile();
-   UserInput GetMode();
+   bool NewFile();
+   int ReadUserInput(); 
+   bool DeleteFile();
+   UserInput GetUserInput();
 
 private: 
-   char _mode;
+   char _userInput;
 }; // end 
 
