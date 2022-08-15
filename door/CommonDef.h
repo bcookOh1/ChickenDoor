@@ -21,14 +21,14 @@
 
 using namespace std;
 
-// outputs 
-const int STEPPER_ENABLE = 29; 
-const int STEPPER_DIRECTION = 25; 
+// // outputs 
+// const int STEPPER_ENABLE = 29; 
+// const int STEPPER_DIRECTION = 25; 
 
-// inputs 
-const int DOOR_OBSTRUCTED = 28; 
-const int DOOR_RETRACTED = 27; 
-const int DOOR_EXTENDED = 26; 
+// // inputs 
+// const int DOOR_OBSTRUCTED = 28; 
+// const int DOOR_RETRACTED = 27; 
+// const int DOOR_EXTENDED = 26; 
 
 // define an enum for the gpio type
 // values match macros in wiringPi.h
@@ -93,11 +93,6 @@ const string INPUT_RESISTOR_NONE_STR = "none";
 const string INPUT_RESISTOR_PULLDOWN_STR = "pulldown";
 const string INPUT_RESISTOR_PULLUP_STR = "pullup";
 
-// light level constants used in the state machine and manual mode
-const float NIGHT_LIGHT_LEVEL_THRESHOLD = 2000.0f; 
-const float MORNING_LIGHT_LEVEL_THRESHOLD = 3000.0f; 
-const float LIGHT_LEVEL_MANUAL_UP = 10001.1f; 
-const float LIGHT_LEVEL_MANUAL_DOWN = -1.0f; 
 
 struct Address {
    string house_number;
@@ -291,7 +286,7 @@ struct AppConfig  {
 // this is where the php web page write the mode file 
 const filesystem::path MODE_FILE{ "/home/bjc/coop/exe/user_input.txt" };
 
-// the 3 mode plus an undefined used as a default 
+// user input values plus an undefined used as a default 
 enum class UserInput : unsigned {
    Undefined,
    Manual_Up,
