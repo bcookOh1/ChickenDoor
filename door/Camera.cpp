@@ -12,9 +12,7 @@ Camera::~Camera(){
 
 void Camera::StillAsync() {
 
-   std::string fname = "Obstruction_";
-   fname += GetDateTimeFilename();
-   fname += ".jpg";
+   std::string fname = "/var/www/html/pics/coop.jpg";
    _filename = fname;
    
    string cmdString = "raspistill -o # -ex auto -awb auto -q 75 -n -rot 270";
