@@ -29,6 +29,12 @@ const unsigned MoveDown = 0;
 // const int On = 1;
 // const int Off = 0;
 
+enum class DoorCommand : int {
+   NoChange = 0,
+   Open,
+   Close,
+}; // end enum
+
 
 // anonymous namespace 
 namespace {
@@ -36,7 +42,9 @@ namespace {
 // events 
 struct eInit {};
 struct eStartUp {};
-struct eOnTime {};
+struct eOnTime {
+   DoorCommand dc{DoorCommand::NoChange};
+}; // end struct
 
 // for this implementation, states are just empty classes
 class Idle1;
@@ -69,8 +77,8 @@ class sm_chicken_coop {
    using self = sm_chicken_coop;
 public:
 
-   explicit sm_chicken_coop(IoValues &ioValues, AppConfig &ac, Rp4bPwm &pwm, NoBlockTimer &nbTimer, float &light) :
-      _ioValues(ioValues), _ac(ac), _pwm(pwm), _nbTimer(nbTimer), _light(light) {
+   explicit sm_chicken_coop(IoValues &ioValues, AppConfig &ac, Rp4bPwm &pwm, NoBlockTimer &nbTimer) :
+      _ioValues(ioValues), _ac(ac), _pwm(pwm), _nbTimer(nbTimer) {
    } // end ctor 
 
    // callback to set outputs in main()
@@ -116,14 +124,12 @@ public:
          return (_nbTimer.IsDone());
       }; // end TimerDone
 
-      auto IsMorning = [this] () -> bool {
-         PrintLn((boost::format{ "+++ IsMorning: %.1f" } %  _light).str());
-         return (_light >= _ac.morningLigh && IsAM());
-      }; // end IsMorning
+      auto IsDay = [this] (const eOnTime &e) -> bool {
+         return (e.dc == DoorCommand::Open);
+      }; // end IsDay
 
-      auto IsNight = [this] () -> bool {
-         cout << "+++ IsNight " << str(format("%.1f") %  _light) << endl;
-         return (_light <= _ac.nightLight && !IsAM());
+      auto IsNight = [this] (const eOnTime &e) -> bool {
+         return (e.dc == DoorCommand::Close);
       }; // end IsNight
 
       auto ReturnTrue = [] () -> bool {
@@ -153,7 +159,7 @@ public:
 
          // normal sequence 
          state<Closed> + sml::on_entry<_> / [&] {_cb(DoorState::Closed); MotorSpeed(0); },
-         state<Closed> + event<eOnTime>[IsMorning] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
+         state<Closed> + event<eOnTime>[IsDay] / [] {PrintLn("MovingToOpen");} = state<MovingToOpen>,
 
          state<MovingToOpen> + sml::on_entry<_> / [&] {_cb(DoorState::MovingToOpen); MotorDirection(MoveUp); MotorSpeed(_ac.pwmHzFast); StartTimer(30000);},
          state<MovingToOpen> + event<eOnTime>[AtUp] / [&] {PrintLn("Open"); KillTimer();} = state<Open>,
@@ -188,13 +194,6 @@ private:
    AppConfig &_ac;
    Rp4bPwm &_pwm;
    NoBlockTimer &_nbTimer;
-   float &_light;
-   // bool _readyFlag;
-
-   // actions
-   // void ReadyFlag(bool state) {
-   //    _readyFlag = state;
-   // } // end ReadyFlag
 
    void MotorDirection(unsigned dir) {
       _ioValues["direction"] = static_cast<unsigned>(dir ? 1 : 0);
