@@ -30,7 +30,7 @@ const string RESPONSE_FILE = "coords.json";
 
 // ref for timeouts: https://stackoverflow.com/questions/42873285/curl-retry-mechanism
 // https://geocoding.geo.census.gov/geocoder/locations/address?street=8243+Forest+Beach+Rd&city=Watervliet&state=Michigan&zip=49098&benchmark=2020&format=json
-const string CURL_LOCATION_CMD = "curl -o " + RESPONSE_FILE
+const string CURL_LOCATION_CMD = "curl -s -o " + RESPONSE_FILE
    + " \"https://geocoding.geo.census.gov/geocoder/locations/address?street=[street]&city=[city]&state=[state]&zip=[zip]&benchmark=2020&format=json\"";
 
 
