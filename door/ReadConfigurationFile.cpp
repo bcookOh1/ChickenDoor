@@ -28,6 +28,7 @@ int ReadConfigurationFile::ReadIn() {
       _appConfig.dbPath = GetScalarData<string>(tree, CONFIG_DB_PATH);
       _appConfig.dbDoorStateTable = GetScalarData<string>(tree, CONFIG_DB_DOOR_STATE_TABLE);
       _appConfig.dbSensorTable = GetScalarData<string>(tree, CONFIG_DB_SENSOR_TABLE);
+      _appConfig.dbSunDataTable = GetScalarData<string>(tree, CONFIG_DB_SUN_DATA_TABLE);
 
       // get the IO configuration
       for(pt::ptree::value_type &v : tree.get_child(CONFIG_DIGITAL_IO)) {
@@ -73,7 +74,7 @@ int ReadConfigurationFile::ReadIn() {
       _appConfig.sunsetOffsetMin = GetScalarData<int>(tree, CONFIG_SUNSET_OFFSET_MINUTES);
 
       _appConfig.houseNumber = GetScalarData<string>(tree, CONFIG_ADDRESS_HOUSE_NUMBER);
-      _appConfig.street = GetScalarData<string>(tree, CONFIG_ADDRESS_HOUSE_NUMBER);
+      _appConfig.street = GetScalarData<string>(tree, CONFIG_ADDRESS_STREET);
       _appConfig.city = GetScalarData<string>(tree, CONFIG_ADDRESS_CITY);
       _appConfig.state = GetScalarData<string>(tree, CONFIG_ADDRESS_STATE);
       _appConfig.zipCode = GetScalarData<string>(tree, CONFIG_ADDRESS_ZIP_CODE);
