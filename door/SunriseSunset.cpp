@@ -87,7 +87,7 @@ void SunriseSunset::FetchTimes(coroutine<SunriseSunsetStatus>::push_type& out) {
             _times = sr.GetData();
             sr.ResetStatus();
 
-            _times.Print();
+            // _times.Print();
             
             // this conversion is multi-step with several possible errors 
             int result = Convert2Local();
@@ -131,11 +131,11 @@ int SunriseSunset::Convert2Local() {
    int result = 0;
 
    std::tuple<unsigned, unsigned, unsigned> val1, val2;
-   ptime utc_sunrise_pt, utc_sunset_pt;
+   ptime utc_sunrise_pt, utc_sunset_pt, utc_upper_transit;
    time_duration day_length;
 
-   // for sunsise
-   result = ParseTime(_times.sunrise, val1);
+   // for sunrise
+   result = Parse24HrTime(_times.sunrise, val1);
    if (result != 0) {
       _errorStr = "error parsing sunrise string";
       return -1;
@@ -143,10 +143,10 @@ int SunriseSunset::Convert2Local() {
 
    // cout << "hour: " << get<0>(val1) << ", minute: " << get<1>(val1) << ", second: " << get<2>(val1) << endl;
 
-   // for duration
-   result = ParseDuration(_times.day_length, val2);
+   // for upper transit
+   result = Parse24HrTime(_times.upper_transit, val2);
    if (result != 0) {
-      _errorStr = "error parsing day_length string";
+      _errorStr = "error parsing upper transit string";
       return -1;
    } // end if 
 
@@ -158,11 +158,18 @@ int SunriseSunset::Convert2Local() {
       return -1;
    } // end if 
 
-   result = MakeDurationFrom(get<0>(val2), get<1>(val2), get<2>(val2), day_length);
+   result = MakePTimeFrom(get<0>(val2), get<1>(val2), get<2>(val2), utc_upper_transit);
    if (result != 0) {
-      _errorStr = "error on day_length values to time_duration";
+      _errorStr = "error on upper_transit values to ptime";
       return -1;
    } // end if 
+
+   // the upper_transit is the time when the sun is at it's highest point 
+   // when is 1/2 between sunrise and sunset. 
+   // calc 1/2 day duration and double it for day_length  
+   time_duration td = utc_upper_transit - utc_sunrise_pt;
+   td *= 2;
+   day_length = td;
 
    result = CalcSunset(utc_sunrise_pt, day_length, utc_sunset_pt);
    if (result != 0) {

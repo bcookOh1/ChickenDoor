@@ -23,6 +23,8 @@ int SunriseSunsetReader::RunTask() {
       return -1;
    } // end if 
    
+   // cout << _curlCmd << endl;
+
    _child = unique_ptr<bp::child>(new bp::child(_curlCmd));
 
    _child->wait();
@@ -54,6 +56,7 @@ int SunriseSunsetReader::RunTask() {
 int SunriseSunsetReader::ReplacePlaceholders() {
    int ret = 0;
 
+   boost::replace_first(_curlCmd, DATE_PLACEHOLDER, GetNavyFormattedDate());
    boost::replace_first(_curlCmd, LATITUDE_PLACEHOLDER, _coords.latitude);
    boost::replace_first(_curlCmd, LONGITUDE_PLACEHOLDER, _coords.longitude);
 
@@ -71,9 +74,22 @@ int SunriseSunsetReader::ParseResponse() {
 
       try {
 
-         _sunriseSunsetStringTimes.sunrise = tree.get<string>("results.sunrise");
-         _sunriseSunsetStringTimes.sunset = tree.get<string>("results.sunset");
-         _sunriseSunsetStringTimes.day_length = tree.get<string>("results.day_length");
+         for (proptree::ptree::value_type& v : tree.get_child(PATH_TO_SUNDATA)) {
+            // cout << v.second.get<string>(SUNDATA_ITEM_LABEL) << ", " << v.second.get<string>(SUNDATA_TIME_LABEL) << endl;
+            
+            if (v.second.get<string>(SUNDATA_ITEM_LABEL) == SUNDATA_RISE_LABEL) {
+               _sunriseSunsetStringTimes.sunrise = v.second.get<string>(SUNDATA_TIME_LABEL);
+            } // end if 
+
+            if (v.second.get<string>(SUNDATA_ITEM_LABEL) == SUNDATA_SET_LABEL) {
+               _sunriseSunsetStringTimes.sunset = v.second.get<string>(SUNDATA_TIME_LABEL);
+            } // end if 
+
+            if (v.second.get<string>(SUNDATA_ITEM_LABEL) == SUNDATA_UPPER_TRANSIT_LABEL) {
+               _sunriseSunsetStringTimes.upper_transit = v.second.get<string>(SUNDATA_TIME_LABEL);
+            } // end if 
+
+         } // end for 
 
       }
       catch (std::exception& e) {
@@ -89,6 +105,12 @@ int SunriseSunsetReader::ParseResponse() {
       ret = -1;
    } // end try/catch
 
+   // check that all values are set and nothing missed
+   if(_sunriseSunsetStringTimes.sunrise.length() == 0 || 
+      _sunriseSunsetStringTimes.sunset.length() == 0 ||
+      _sunriseSunsetStringTimes.upper_transit.length() == 0){
+      ret = -1;
+   } // end if 
 
    return ret;
 } // end ParseResponse
