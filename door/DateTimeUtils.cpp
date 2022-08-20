@@ -72,7 +72,10 @@ int Parse24HrTime(const string& timeStr, std::tuple<unsigned, unsigned, unsigned
 
       hours = boost::lexical_cast<unsigned>(capture[1]);
       minutes = boost::lexical_cast<unsigned>(capture[2]);
-      seconds = boost::lexical_cast<unsigned>(capture[3]);
+
+      if(capture.length(3) > 0){
+         seconds = boost::lexical_cast<unsigned>(capture[3]);
+      } // end if 
 
       val = make_tuple(hours, minutes, seconds);
    }
@@ -102,6 +105,10 @@ int MakeDurationFrom(unsigned hours, unsigned minutes, unsigned seconds, time_du
 } // end MakeDurationFrom
 
 
+// just use the difference from utc and local time
+// to convert utc times to locals time.
+// ptime and time_duration handle the details on dates and 
+// possible carries
 int ToLocalTime(const ptime &utc_pt, ptime &local_pt) {
 
    ptime curr_time = second_clock::local_time();
@@ -114,9 +121,42 @@ int ToLocalTime(const ptime &utc_pt, ptime &local_pt) {
 } // end ToLocalTime
 
 
+// another date formatter, this produces the right date string 
+// for https://aa.usno.navy.mil (note their documentation is not up to date).
+// this function returns the right format 
+string GetNavyFormattedDate() {
+   ostringstream oss;
+
+   // get now time and convert to tm struct 
+   time_t nowTime;
+   time(&nowTime);
+   struct tm* timeinfo;
+   timeinfo = localtime(&nowTime);
+
+   oss << setw(4) << (timeinfo->tm_year + 1900) << "-";
+   oss << setw(2) << setfill('0') << (timeinfo->tm_mon + 1) << "-";
+   oss << setw(2) << setfill('0') << timeinfo->tm_mday;
+
+   return oss.str();;
+} // end GetNavyFormattedDate
+
+
+string Ptime2TmeString(const ptime &time){
+   ostringstream oss;
+
+   auto tod = time.time_of_day();
+   oss << setw(2) << setfill('0') << tod.hours() << ":"; 
+   oss << setw(2) << setfill('0') << tod.minutes() << ":"; 
+   oss << setw(2) << setfill('0') << tod.seconds(); 
+
+   return oss.str();
+} // end Ptime2TmeString
+
+
 // pre: sunrise contains the date for the sunrise (the date requested from the curl command)
-// using https://api.sunrise-sunset.org/json the date is date of request,
-// MakePTimeFrom() adds the current date, assume MakePTimeFrom() is called the day of the request
+// using https://api.sunrise-sunset.org/json or // used for https://aa.usno.navy.mil request 
+// the date is date of request, MakePTimeFrom() adds the current date, assume MakePTimeFrom() 
+// is called the day of the request
 int CalcSunset(const ptime &sunrise, time_duration &dt, ptime &sunset) {
    sunset = sunrise + dt;
    return 0;

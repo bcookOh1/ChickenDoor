@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
-// #include <algorithm>
 #include <tuple>
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -33,9 +32,9 @@ const sregex Sre_Time_String = (s1 = +_d) >> ':' >> (s2 = +_d) >> ':' >>
 const sregex Sre_Duration_String = (s1 = +_d) >> ':' >> (s2 = +_d) >> ':' >>
                                    (s3 = +_d);
 
-// 24hr time string from configuration ex "02:10:00"
-const sregex Sre_24Hr_Time_String = (s1 = +_d) >> ':' >> (s2 = +_d) >> ':' >>
-                                    (s3 = +_d);
+// 24hr time string from configuration ex "02:10:00", note seconds are optional
+const sregex Sre_24Hr_Time_String = (s1 = +_d) >> ':' >> (s2 = +_d) >> 
+   boost::xpressive::optional(':' >> (s3 = +_d));
 
 bool IsTime(int64_t hour, int64_t minute);
 
@@ -52,12 +51,19 @@ int MakeDurationFrom(unsigned hours, unsigned minutes, unsigned second, time_dur
 int ToLocalTime(const ptime &utc_pt, ptime &local_pt);
 int CalcSunset(const ptime &pt, time_duration &dt, ptime &sunset);
 
+// used for https://aa.usno.navy.mil request 
+string GetNavyFormattedDate();
+
+string Ptime2TmeString(const ptime &time);
+
 
 // all times are in local times 
-// the offsets are set in the ctor so the class is valid for those intial values only,
+// the offsets are set in the ctor so the class is valid for those initial values only,
+// sunriseOffset and sunsetOffset are read from the configurtion file 
 // but the sunrise sunset times are expected to be updated each day
 class Daytime {
 public:
+   // params sunriseOffset and sunsetOffset are in minutes
    Daytime(int sunriseOffset, int sunsetOffset) : _daytime{0} {
       _sunriseOffset = minutes{ sunriseOffset }; 
       _sunsetOffset = minutes{ sunsetOffset };
@@ -65,12 +71,15 @@ public:
 
    ~Daytime() {}
 
+   // the sunrise and sunset values are update each day 
+   // pre: sunrise and sunset must include the date 
    void SetSunriseSunsetTimes(const ptime& sunrise, const ptime& sunset) {
        _sunrise = sunrise; _sunset = sunset; 
    } // end SetSunriseSunsetTimes
    
-   // the sunrise and sunset values are update each day, 
-   // the sunset is always after sunrise, ptime variables include the date  
+   // return true is day time or false not day time    
+   // note: the sunset always follows sunrise, ptime variables include the date
+   // so using ptimes the comparsion is always valid
    int IsDaytime() { 
       ptime sunriseCompare = _sunrise + _sunriseOffset;
       ptime sunsetCompare = _sunset + _sunsetOffset;
