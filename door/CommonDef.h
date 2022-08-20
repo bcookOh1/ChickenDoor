@@ -64,6 +64,7 @@ const string CONFIG_APP_NAME = "ChickenCoop.name";
 const string CONFIG_DB_PATH = "ChickenCoop.database_path";
 const string CONFIG_DB_DOOR_STATE_TABLE = "ChickenCoop.door_state_table";
 const string CONFIG_DB_SENSOR_TABLE = "ChickenCoop.sensor_table";
+const string CONFIG_DB_SUN_DATA_TABLE = "ChickenCoop.sun_data_table";
 const string CONFIG_DIGITAL_IO = "ChickenCoop.digital_io";
 const string CONFIG_DIGITAL_IO_TYPE = "type";
 const string CONFIG_DIGITAL_IO_NAME = "name";
@@ -111,17 +112,17 @@ struct Coordinates {
 struct SunriseSunsetStringTimes {
    string sunrise;
    string sunset;
-   string day_length;
+   string upper_transit;
    void Print() { cout << "sunrise: " << sunrise << ", sunset: " 
-                       << sunset << ", day_length: " 
-                       << day_length << endl; }
+                       << sunset << ", upper_transit: " 
+                       << upper_transit << endl; }
 }; // end struct
 
 
 // each day check for new Sunrise Sunset at this local time.
 // value chosen so Daylight saving time change happens (in US)
 // at 2am, so check just after that  
-const string Time2Check4NewSunriseSunset = "12:10:00";
+const string Time2Check4NewSunriseSunset = "02:10:00";
 
 
 // define a copyable struct for gpio configurations 
@@ -195,6 +196,7 @@ struct AppConfig  {
       dbPath = rhs.dbPath;
       dbDoorStateTable = rhs.dbDoorStateTable;
       dbSensorTable = rhs.dbSensorTable;
+      dbSunDataTable = rhs.dbSunDataTable;
       dIos = rhs.dIos;
       loopTimeMS = rhs.loopTimeMS;
       pwmHzFast = rhs.pwmHzFast;
@@ -218,6 +220,7 @@ struct AppConfig  {
       dbPath = rhs.dbPath;
       dbDoorStateTable = rhs.dbDoorStateTable;
       dbSensorTable = rhs.dbSensorTable;
+      dbSunDataTable = rhs.dbSunDataTable;
       dIos = rhs.dIos;
       loopTimeMS = rhs.loopTimeMS;
       pwmHzFast = rhs.pwmHzFast;
@@ -242,6 +245,7 @@ struct AppConfig  {
       dbPath = "";
       dbDoorStateTable = "";
       dbSensorTable = "";
+      dbSunDataTable = "";
       dIos.clear();
       loopTimeMS = 0;
       pwmHzFast = 0;
@@ -263,6 +267,7 @@ struct AppConfig  {
    string dbPath;                /// the full path to the shared databased 
    string dbDoorStateTable;      /// name of the door state table 
    string dbSensorTable;         /// name of the sensor reading table 
+   string dbSunDataTable;        /// name of the sun rise/set table 
    vector<IoConfig> dIos;        /// a list of the digital io points 
    int loopTimeMS;               /// the program's read input loop time in ms
    int pwmHzFast;                /// fast door pwm hertz, used for opening
@@ -327,6 +332,55 @@ inline ostream &operator<<(ostream &out, UserInput usm) {
    return out;
 } // end operator
 
+/////////////////////////////////////////////////////////////////
+// user input values plus an undefined used as a default 
+enum class Decision : unsigned {
+   Undefined,
+   Manual_Up,
+   Manual_Down,
+   Sunrise_W_Offset,
+   Sunset_W_Offset,
+   AM_Light,
+   PM_Light,
+}; // end enum
+
+
+// to string utility
+inline string DecisionToString(Decision dec){
+   string ret;
+
+   switch (dec) {
+   case Decision::Undefined:
+      ret = "Undefined";
+      break;
+   case Decision::Manual_Up:
+      ret = "Manual_Up";
+      break;
+   case Decision::Manual_Down:
+      ret = "Manual_Down";
+      break;
+   case Decision::Sunrise_W_Offset:
+      ret = "Sunrise_W_Offset";
+      break;
+   case Decision::Sunset_W_Offset:
+      ret = "Sunset_W_Offset";
+      break;
+   case Decision::AM_Light:
+      ret = "AM_Light";
+      break;
+   case Decision::PM_Light:
+      ret = "PM_Light";
+      break;
+   } // end switch
+
+   return ret;
+} // end UserInputToString
+
+// util for stream/cout 
+inline ostream &operator<<(ostream &out, Decision dec) {
+   out << DecisionToString(dec);
+   return out;
+} // end operator
 
 
 #endif // end header guard
