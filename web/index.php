@@ -3,6 +3,7 @@
 <html lang="en" > 
    <head>
       <link href="coop.css" rel="stylesheet">
+      <meta name="viewport" content="width=600, initial-scale=1">
       <title>Laura and Jess' Smart Chicken Coop</title>
    </head>
    <body>
@@ -118,6 +119,7 @@
          $state = "None";
          $boardTemp = "None";
          $lightLevel = "None";
+         $decision = "None";
 
          while ($row = $result->fetchArray()) {
 
@@ -125,6 +127,7 @@
             $stateStr = PrintState($row['state']);
             $tempC = $row['pi_temp'];
             $lightLevel = $row['light'];
+            $decision = $row['decision'];
 
             $t=substr($rec_time,11,strlen($rec_time));
             $y=substr($rec_time,0,4);
@@ -146,6 +149,7 @@
                            <th>Time and Date</th>
                            <th>State</th>
                            <th>Light Level</th>
+                           <th>Decision</th>
                            <th>Pi Temperature</th>
                         </tr> ";
             }
@@ -155,6 +159,7 @@
                         <td>$td</td>
                         <td>$stateStr</td>
                         <td>$lightLevel</td>
+                        <td>$decision</td>
                         <td>$temp_str</td>
                     </tr>";
             }
