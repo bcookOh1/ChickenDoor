@@ -59,6 +59,9 @@ UserInput UserInputIPC::GetUserInput() {
    case 'a':
       ret = UserInput::Auto_Mode;
       break;
+   case 'c':
+      ret = UserInput::Take_Picture;
+      break;
    } // end switch
 
    return ret;
