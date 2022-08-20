@@ -96,6 +96,7 @@ int main(int argc, char* args[]){
    udb.SetDbFullPath(ac.dbPath);
    udb.SetDoorStateTableName(ac.dbDoorStateTable);
    udb.SetSensorDataTableName(ac.dbSensorTable);
+   udb.SetSunDataTableName(ac.dbSunDataTable);
 
    // make a digial io class and configure digital io points
    DigitalIO digitalIo;
@@ -147,10 +148,15 @@ int main(int argc, char* args[]){
    NoBlockTimer nbTimer;
    Ccsm ccsm(ioValues, ac, pwm, nbTimer);
 
+   // used in the decision section in while() to document 
+   // what decision was taken, dec is added to the door state table
+   Decision dec = Decision::Undefined;
+
    // lambda as callback from the state machine to set a door_state table
    // see int SetStateMachineCB() im StateMachine.hpp
    auto SetDoorStateTableFromSM = [&] (DoorState ds){
-       UpdateDoorStateDB(ds, udb, lightStr, temperature);
+      string decStr = DecisionToString(dec); 
+      UpdateDoorStateDB(ds, udb, lightStr, temperature, decStr);
    }; // end lambda
 
    // set the callback from main SetOutputFromSM() into the statemachine.hpp SetStateMachineCB()
@@ -248,6 +254,15 @@ int main(int argc, char* args[]){
       auto status = GetSunriseSunsetTimes().get();
       if (status == SunriseSunsetStatus::SunRiseSetComplete) {
          auto times = srss.GetTimes();
+         
+         // save new sun data time to the database
+         int sunDataWriteResult = udb.AddOneSunDataRow(GetSqlite3DateTime(),
+                                                       Ptime2TmeString(times.rise), 
+                                                       Ptime2TmeString(times.set));
+         if(sunDataWriteResult == -1) {
+            cout << udb.GetErrorStr() << endl;
+         } // end if 
+
          daytime.SetSunriseSunsetTimes(times.rise, times.set);
          daytimeDataAvailable = true;
       }
@@ -267,30 +282,39 @@ int main(int argc, char* args[]){
       //  
 
       DoorCommand dc{DoorCommand::NoChange};
+      dec = Decision::Undefined;
       
       if(mode == UserInput::Manual_Up){ // raise
-             dc = DoorCommand::Open;
+         dc = DoorCommand::Open;
+         dec = Decision::Manual_Up;
       }
       else if(mode == UserInput::Manual_Down){ // lower
-             dc = DoorCommand::Close;
+         dc = DoorCommand::Close;
+         dec = Decision::Manual_Down;
       }
       else if(daytimeDataAvailable == true){
 
          if(daytime.IsDaytime()){
             dc = DoorCommand::Open;
+            dec = Decision::Sunrise_W_Offset;
          }
          else {
             dc = DoorCommand::Close;
+            dec = Decision::Sunset_W_Offset;
          } // end if
 
       } 
       else if(lightDataAvaliable == true){
 
-         if(light > ac.morningLight && IsAM()) 
+         if(light > ac.morningLight && IsAM()) {
             dc = DoorCommand::Open;
+            dec = Decision::AM_Light;
+         } // end if 
          
-         if(light < ac.nightLight && !IsAM()) 
+         if(light < ac.nightLight && !IsAM()) { 
             dc = DoorCommand::Close;
+            dec = Decision::PM_Light;
+         } // end if 
 
       } // end if 
 
