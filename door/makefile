@@ -42,4 +42,4 @@ $(TARGET): $(obj)
 
 .PHONY: clean
 clean:
-	rm -f $(obj) $(TARGET) $(dep)
+	rm -f *.o $(TARGET) *.d
