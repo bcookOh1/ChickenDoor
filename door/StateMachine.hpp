@@ -106,20 +106,6 @@ public:
          return (_ioValues["obstructed"] == 0);
       }; // end Obstructed
 
-/*
-      auto IsSwitchUp = [this] () -> bool {
-         return (_ioValues["switch_up"] == 0);
-      }; // end IsSwitchUp
-
-      auto IsSwitchDown = [this] () -> bool {
-         return (_ioValues["switch_down"] == 0);
-      }; // end IsSwitchDown
-
-      auto IsManual = [this] () -> bool {
-         return (_ioValues["switch_up"] == 0 || _ioValues["switch_down"] == 0);
-      }; // end IsManual
-*/
-
       auto TimerDone = [this] () -> bool {
          return (_nbTimer.IsDone());
       }; // end TimerDone
