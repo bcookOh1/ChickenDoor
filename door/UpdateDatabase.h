@@ -28,6 +28,7 @@ public:
   int SetDbFullPath(const string &fullPath);
   int SetDoorStateTableName(const string &dbDoorStateTable);
   int SetSensorDataTableName(const string &dbSensorDataTable);
+  int SetSunDataTableName(const string &dbSunDataTable);
 
   int OpenAndBeginDB();
   int CommitAndCloseDB();
@@ -35,12 +36,16 @@ public:
   int AddDoorStateRow(const string &timestamp, 
                       int state,
                       const string &light, 
-                      const string &temperature);
+                      const string &temperature,
+                      const string &decision);
+
 
   int AddOneDoorStateRow(const string &timestamp, 
                          int state, 
                          const string &light,
-                         const string &temperature);
+                         const string &temperature,
+                         const string &decision);
+
 
   int AddSensorDataRow(const string &timeStamp, 
                        const string &temperature,
@@ -59,6 +64,11 @@ public:
                          const string &light,
                          const string &light_units);
 
+
+  int AddOneSunDataRow(const string &timestamp, 
+                       const string &sunrise,
+                       const string &sunset);
+
   string GetErrorStr() { return _errorStr; }
 
 private: 
@@ -66,6 +76,7 @@ private:
   string _dbFullPath;
   string _dbDoorStateTable;
   string _dbSensorDataTable;
+  string _dbSunDataTable;
   string _errorStr;
   sqlite3 *_db;
 

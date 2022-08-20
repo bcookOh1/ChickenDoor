@@ -48,7 +48,7 @@ string IoToString(const IoValues &ioValues);
 string IoToLine(const IoValues &ioValues);
 
 int ReadBoardTemperature(string &temperature);
-void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string &light, string &temperature);
+void UpdateDoorStateDB(DoorState ds, UpdateDatabase &udb, string &light, string &temperature, string &decision);
 
 
 // conditional print  with optional newline

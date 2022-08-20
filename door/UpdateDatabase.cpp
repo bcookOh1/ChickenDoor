@@ -33,6 +33,13 @@ int UpdateDatabase::SetSensorDataTableName(const string &dbSensorDataTable){
 } // end SetSensorDataTableName
 
 
+int UpdateDatabase::SetSunDataTableName(const string &dbSunDataTable){
+   int ret = 0;
+   _dbSunDataTable = dbSunDataTable;
+   return ret;
+} // end SetSunDataTableName
+
+
 int UpdateDatabase::OpenAndBeginDB(){
    int ret = 0;
    char *zErrMsg = 0;
@@ -87,13 +94,14 @@ int UpdateDatabase::CommitAndCloseDB(){
 int UpdateDatabase::AddDoorStateRow(const string &timestamp, 
                                     int state, 
                                     const string &light,
-                                    const string &temperature) {
+                                    const string &temperature,
+                                    const string &decision) {
    int ret = 0;
    char *zErrMsg = 0;
 
    // build a insert sql command 
-   string sql = "insert into" + _dbDoorStateTable + "(timestamp, state, light, pi_temp) values ";
-   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + ", '" +  temperature + "')";
+   string sql = "insert into" + _dbDoorStateTable + "(timestamp, state, light, pi_temp, decision) values ";
+   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + ", '" +  temperature + "', '" + decision + "')";
 
    // execute sql statement to insert a row
    int rc = sqlite3_exec(_db, sql.c_str(), callback, 0, &zErrMsg);
@@ -112,7 +120,8 @@ int UpdateDatabase::AddDoorStateRow(const string &timestamp,
 int UpdateDatabase::AddOneDoorStateRow(const string &timestamp, 
                                        int state, 
                                        const string &light,
-                                       const string &temperature) {
+                                       const string &temperature,
+                                       const string &decision) {
    int ret = 0;
    char *zErrMsg = 0;
 
@@ -138,8 +147,8 @@ int UpdateDatabase::AddOneDoorStateRow(const string &timestamp,
 
 
    // build a insert sql command 
-   string sql = "insert into " + _dbDoorStateTable + "(timestamp, state, light, pi_temp) values ";
-   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + "', '" + temperature + "')";
+   string sql = "insert into " + _dbDoorStateTable + "(timestamp, state, light, pi_temp, decision) values ";
+   sql += "('" + timestamp  + "', " + lexical_cast<string>(state) + ", '" + light  + "', '" + temperature + "', '" + decision + "')";
 
    // execute sql statement to insert a row
    rc = sqlite3_exec(_db, sql.c_str(), callback, 0, &zErrMsg);
@@ -264,6 +273,65 @@ int UpdateDatabase::AddOneSensorDataRow(const string &timestamp,
 
    return ret;
 } // end AddOneSensorDataRow
+
+
+ int UpdateDatabase::AddOneSunDataRow(const string &timestamp, 
+                                      const string &sunrise,
+                                      const string &sunset){
+   int ret = 0;
+   char *zErrMsg = 0;
+
+   // open db use full path 
+   int rc = sqlite3_open(_dbFullPath.c_str(), &_db);
+   if(rc) {
+      _errorStr = "can't open database: ";
+      _errorStr += sqlite3_errmsg(_db);
+      sqlite3_free(zErrMsg);
+      return -1;
+   } // end if 
+ 
+
+   // execute sql statement 
+   rc = sqlite3_exec(_db, "begin", callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+      _errorStr = "begin command error: ";
+      _errorStr += sqlite3_errmsg(_db);
+      sqlite3_free(zErrMsg);
+      sqlite3_close(_db);
+      return -1;
+   } // end if 
+
+
+   // build a insert sql command 
+   string sql = "insert into " + _dbSunDataTable + "(timestamp, sunrise, sunset) values";
+   sql += "('" + timestamp  + "', '" + sunrise + "', '" + sunset + "')";
+
+   // execute sql statement to insert a row
+   rc = sqlite3_exec(_db, sql.c_str(), callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+      _errorStr = "insert row: ";
+      _errorStr += sqlite3_errmsg(_db);
+      sqlite3_free(zErrMsg);
+      sqlite3_close(_db);
+      return -1;
+   } // end if 
+
+
+   // execute end (commit) transition 
+   rc = sqlite3_exec(_db, "end", callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+      _errorStr = "begin command error: ";
+      _errorStr += sqlite3_errmsg(_db);
+      sqlite3_free(zErrMsg);
+      sqlite3_close(_db);
+      return -1;
+   } // end if 
+   
+   sqlite3_close(_db);
+
+   return ret;
+} // end AddOneSensorDataRow
+
 
 
 
