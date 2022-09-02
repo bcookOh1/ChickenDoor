@@ -56,6 +56,10 @@ int SunriseSunsetReader::RunTask() {
 int SunriseSunsetReader::ReplacePlaceholders() {
    int ret = 0;
 
+   // replace with the original command string 
+   // needed to update the date to get the daily times 
+   _curlCmd = CURL_SUN_RISE_SET_CMD;
+
    boost::replace_first(_curlCmd, DATE_PLACEHOLDER, GetNavyFormattedDate());
    boost::replace_first(_curlCmd, LATITUDE_PLACEHOLDER, _coords.latitude);
    boost::replace_first(_curlCmd, LONGITUDE_PLACEHOLDER, _coords.longitude);
