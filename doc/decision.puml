@@ -1,0 +1,49 @@
+' plantuml diagram 
+' author: Bennett Cook
+' date: 8/21/2022
+' desc: door open/close decision 
+' ref: https://plantuml.com
+' ref: https://plantuml.com/commons
+' ref: https://plantuml-documentation.readthedocs.io/en/latest/
+
+@startuml
+
+!pragma useVerticalIf on
+
+start 
+
+:set door_command to NoChange
+set decision to undefined;
+
+
+if (UserInput::Manual_Up) then (yes)
+  :set door_command to open
+  set decision to Manual_Up;
+elseif (UserInput::Manual_Down) then (yes)
+  :set door_command to close 
+  set decision to Manual_Down;
+elseif (daytimeDataAvailable == true) then (yes)
+
+   if (IsDaytime == true) then (yes)
+      :set door_command to open
+      set decision to Sunrise_W_Offset;
+   else (no)
+      :set door_command to close
+      set decision to Sunset_W_Offset;
+   endif
+
+elseif (lightDataAvailable == true) then (yes)
+
+   if (light > morningLight && IsAM()) then (yes)
+      :set door_command to open
+      set decision to AM_Light;
+   elseif (light < nightLight && not IsAM()) then (yes)
+      :set door_command to close
+      set decision to PM_Light;
+   endif
+
+endif
+
+stop
+
+@enduml

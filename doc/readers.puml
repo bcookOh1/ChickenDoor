@@ -1,0 +1,71 @@
+' plantuml diagram 
+' author: Bennett Cook
+' date: 8/20/2022
+' desc: reader functions
+' ref: https://plantuml.com
+' ref: https://plantuml.com/commons
+' ref: https://plantuml-documentation.readthedocs.io/en/latest/
+
+@startuml
+
+skinparam groupInheritance 4
+
+class Reader {
+   __ public __
+   + string GetError()
+   + ReaderStatus GetStatus()
+   + void ResetStatus()
+   + virtual int RunTask()
+   + int ReadAfterSec()
+   + void StopWaiting() 
+   + void RestartWait()
+   __ protected __
+   # void WaitThenRun()
+   # void SetStatus()
+   # void SetError()
+}
+
+class Si7021Reader {
+   Si7021 _si7021
+}
+
+class Tsl2591Reader {
+   Tsl2591 _tsl2591
+}
+
+Reader <|-- Si7021Reader
+Reader <|-- PiTempReader
+Reader <|-- Tsl2591Reader
+Reader <|-- LocationReader
+Reader <|-- SunriseSunsetReader
+
+class SunriseSunset {
+   __ public __
+   SunriseSunsetStatus GetStatus()
+   SunTimes GetTimes()
+   void FetchTimes()
+   __ private __
+   LocationReader _locationReader
+   SunriseSunsetReader _sunriseSunsetReader
+}
+
+SunriseSunset -- LocationReader 
+SunriseSunset -- SunriseSunsetReader 
+
+note left of Reader 
+Readers are used in the main 
+while loop, they perform some
+hardware read function that take
+multiple loop periods to complete. 
+end note
+
+note right of SunriseSunset 
+The SunriseSunset class is a version
+of a reader that has two reader classes.
+FetchTimes() is a coroutine called, from 
+the main loop that "yields" and doesn't 
+block the caller.   
+end note
+
+
+@enduml
